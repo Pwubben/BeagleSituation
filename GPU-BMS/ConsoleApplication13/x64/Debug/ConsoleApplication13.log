@@ -1,0 +1,3 @@
+﻿  BMS.cpp
+c:\users\pimwu\source\repos\gpu-bms\consoleapplication13\bms.cpp(53): warning C4244: '+=': conversion from 'double' to 'int', possible loss of data
+  ConsoleApplication13.vcxproj -> C:\Users\pimwu\source\repos\GPU-BMS\x64\Debug\ConsoleApplication13.exe

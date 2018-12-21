@@ -1,0 +1,5 @@
+﻿  Source.cpp
+c:\users\pimwu\source\repos\cpu-mog\consoleapplication5\source.cpp(237): warning C4101: 'value': unreferenced local variable
+c:\users\pimwu\source\repos\cpu-mog\consoleapplication5\source.cpp(294): warning C4101: 'duration2': unreferenced local variable
+c:\users\pimwu\source\repos\cpu-mog\consoleapplication5\source.cpp(287): warning C4101: 'del': unreferenced local variable
+  ConsoleApplication5.vcxproj -> C:\Users\pimwu\source\repos\CPU-MOG\x64\Debug\ConsoleApplication5.exe
