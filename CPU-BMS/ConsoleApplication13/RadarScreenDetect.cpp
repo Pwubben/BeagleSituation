@@ -32,7 +32,7 @@ void RadarScreenDetect(cv::Mat src, cv::Rect& radar_scr, cv::Rect& sea_scr) {
 	//circle(src, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);
 	
 	radar_scr = cv::Rect(center.x - radius, center.y - radius, 2 * radius, 2 * radius);
-	sea_scr = cv::Rect(0, center.y + radius+70, src.cols, src.rows-center.y-radius-70);
+	sea_scr = cv::Rect(10, center.y + radius+70, src.cols-10, src.rows-center.y-radius-70);
 	//cv::imshow("Hough", src(radar_scr));
 
 

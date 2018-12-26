@@ -55,7 +55,9 @@ void BMS::computeSaliency(double step)
 			//waitKey(30);
 			Mat am = getAttentionMap(bm, mDilationWidth_1, mNormalize, mHandleBorder);
 
+		
 			//imshow("Attention Map", am);
+			//cv::waitKey(0);
 			mSaliencyMap += am;
 			//imshow("Saliency Map", mSaliencyMap);
 

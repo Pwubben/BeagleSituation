@@ -1,0 +1,52 @@
+﻿  stdafx.cpp
+  BMS.cpp
+BMS.cpp(36): error C2039: 'cvtColor': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(42): error C2039: 'cvtColor': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(58): warning C4244: '+=': conversion from 'double' to 'int', possible loss of data
+BMS.cpp(61): error C2039: 'threshold': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(69): error C2039: 'add': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(125): error C2039: 'compare': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(129): error C2039: 'compare': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(130): error C2039: 'compare': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(150): error C2039: 'normalize': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(151): error C2039: 'normalize': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(154): error C2039: 'normalize': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(157): error C2039: 'add': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(164): error C2039: 'normalize': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(177): error C2039: 'split': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+BMS.cpp(180): error C2039: 'normalize': is not a member of 'cv::cuda'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cuda.inl.hpp(51): note: see declaration of 'cv::cuda'
+  histogram.cpp
+histogram.cpp(44): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+  lbp.cpp
+lbp.cpp(38): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  lbp.cpp(167): note: see reference to function template instantiation 'void lbp::ELBP_<char>(const cv::Mat &,cv::Mat &,int,int)' being compiled
+lbp.cpp(39): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(56): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(76): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  lbp.cpp(179): note: see reference to function template instantiation 'void lbp::VARLBP_<char>(const cv::Mat &,cv::Mat &,int,int)' being compiled
+lbp.cpp(77): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(97): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(107): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(95): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(123): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  lbp.cpp(190): note: see reference to function template instantiation 'void lbp::variance_lbp_<char>(const cv::Mat &,cv::Mat &,int,int)' being compiled
+lbp.cpp(124): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(145): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+lbp.cpp(143): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+  Main.cpp
+Main.cpp(45): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+Main.cpp(28): warning C4101: 'ttt': unreferenced local variable
