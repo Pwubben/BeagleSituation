@@ -8,7 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
-#include "read_directory.h"
+//#include "read_directory.h"
 
 
 #include <opencv2\core\core.hpp>
@@ -27,7 +27,6 @@
 #include "LBP.hpp"
 #include "LBPGPU.cuh"
 //#include <opencv2\Blob_detection.hpp>
-#include <vector>
 //#include <tbb\parallel_for.h>
 //#include <tbb\blocked_range.h>
 
@@ -50,9 +49,14 @@ void main()
 
 	// Declare matrices to store original and resultant binary image
 	cv::Mat orig_img;
+	// Declare VideoCapture object for storing video
 
-	//Declare a VideoCapture object to store incoming frame and initialize it
-	cv::VideoCapture capture("Distant.mp4");
+	std::stringstream ss;
+	std::string path = "F:\\Afstuderen\\Afstuderen\\Videos\\";
+	std::string file = "ss1_sc.avi";
+	ss << path << file;
+	std::string s = ss.str();
+	cv::VideoCapture capture(s);
 	capture.read(orig_img);
 
 	/*cv::Rect Radar_scr = cv::Rect(135, 30, 180, 200);

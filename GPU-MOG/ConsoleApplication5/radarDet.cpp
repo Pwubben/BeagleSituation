@@ -1,4 +1,4 @@
-//#include "pch.h"
+#include "pch.h"
 //#include<opencv2/opencv.hpp>
 //#include <vector>
 //#include<iostream>

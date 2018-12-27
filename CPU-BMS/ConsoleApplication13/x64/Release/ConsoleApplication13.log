@@ -1,8 +1,14 @@
-﻿  BMS.cpp
+﻿  stdafx.cpp
+  BMS.cpp
+  histogram.cpp
+  lbp.cpp
+lbp.cpp(534): warning C4838: conversion from 'unsigned int' to 'float' requires a narrowing conversion
   Main.cpp
+  RadarScreenDetect.cpp
+  trim.cpp
   Generating code
-  18 of 821 functions ( 2.2%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    3 functions had inline decision re-evaluated but remain unchanged
+  808 of 821 functions (98.4%) were compiled, the rest were copied from previous compilation.
+    26 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  ConsoleApplication13.vcxproj -> C:\Users\pimwu\source\repos\CPU-BMS\x64\Release\ConsoleApplication13.exe
+  ConsoleApplication13.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\CPU-BMS\x64\Release\ConsoleApplication13.exe
