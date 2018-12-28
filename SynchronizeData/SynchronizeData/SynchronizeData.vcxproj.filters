@@ -24,6 +24,12 @@
     <ClInclude Include="trim.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DetectAlgorithms.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RadarScreenDetect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -33,6 +39,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="trim.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GroundTruth.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RadarScreenDetect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -46,7 +46,7 @@ void unPause(cv::VideoCapture src, int& begin) {
 	begin = frameCount;
 }
 
-void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::string name) {
+void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::string name, int correction) {
 	cv::Mat tSrc;
 	src >> tSrc;
 	
@@ -54,7 +54,7 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 
 	cv::VideoWriter video(name, CV_FOURCC('M', 'J', 'P', 'G'), 15, tSrc.size(), true);
 
-	int startFrame = FPS*begin;
+	int startFrame = FPS*begin+correction;
 	int endFrame = FPS*end - startFrame;
 
 	// Cycle trough frames until video is unpaused
