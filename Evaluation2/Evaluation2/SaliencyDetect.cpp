@@ -209,7 +209,7 @@ void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec
 		duration = static_cast<double>(cv::getTickCount()) - duration;
 		duration /= cv::getTickFrequency();
 
-		if (count > 10) {
+		if (count > 5) {
 			total_time += duration;
 		}
 		count++;
@@ -238,22 +238,34 @@ void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec
 		if (cv::waitKey(1) > 0)
 			break;
 
-		if (count == 5)
+		cout << count << endl;
+		waitKey(50);
+		if (count == 15)
 			break;
 	}
-	avg_time = total_time / (count-10);
+	avg_time = total_time / (count-5);
 	std::cout << "\n Average Time: " << avg_time << std::endl;
 	video.release();
 	//_getch();
 }
 
-void GMMDetect(cv::VideoCapture capture, vector<Rect> &boundRect, double &avg_time, float max_dimension, double backGroundRatio) {
+void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, double &avg_time, float max_dimension, double backGroundRatio) {
 	
 	double total_time = 0.0, count = 0.0, duration = 0.0;
 
 	//GPU objects
-	cv::Mat src;
+	cv::Mat src,src_small;
 	capture.read(src);
+
+	// Radar and sea windows
+	cv::Rect sea_scr;
+	cv::Rect radar_scr;
+
+	RadarScreenDetect(src, radar_scr, sea_scr);
+
+	cv::Mat radar_src = src(radar_scr);
+	src = src(sea_scr);
+
 	cv::cuda::GpuMat frame, fgmask, fgimg;
 	frame.upload(src);
 	fgimg.create(frame.size(), frame.type());
@@ -305,37 +317,14 @@ void GMMDetect(cv::VideoCapture capture, vector<Rect> &boundRect, double &avg_ti
 		}
 
 		// Upload to GPU
-
-		resize(src, src, Size((int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD)), 0.0, 0.0, INTER_AREA);
+		src = src(sea_scr);
+		resize(src, src_small, Size((int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD)), 0.0, 0.0, INTER_AREA);
 
 		duration = static_cast<double>(cv::getTickCount());
-		//Mat mean1, mean2, mean3, std1, std2, std3;
-		//vector<Mat> channels;
-		//split(src, channels);
-		//meanStdDev(channels[0], mean1, std1);
-		//meanStdDev(channels[1], mean2, std2);
-		//meanStdDev(channels[2], mean3, std3);
 
+		frame.upload(src_small);
 
-		////loopcount++;
-		////trh = mean1.at<double>(0) + 3 * std1.at<double>(0);
-		//double dist = 1.5;
-		//Mat bm1 = (channels[0] < mean1 - dist*std1) | (channels[0] > mean1 + dist * std1);
-		//Mat bm2 = (channels[1] < mean2 - dist * std2) | (channels[1] > mean2 + dist* std2);
-		//Mat bm3 = (channels[2] < mean3 - dist * std3) | (channels[2] > mean3 + dist * std3);
-
-		//imshow("bm1", bm1);
-		//imshow("bm2", bm2);
-		//imshow("bm3", bm3);
-		//Mat res = bm1 + bm2 + bm3;
-		//normalize(res, res, 255, 0, NORM_MINMAX);
-		//imshow("res", res);
-
-
-		frame.upload(src);
-
-
-		cv::cuda::cvtColor(frame, frame, CV_BGR2Lab);
+		//cv::cuda::cvtColor(frame, frame, CV_BGR2Lab);
 
 		std::vector<cv::cuda::GpuMat> featureMaps;
 
@@ -357,9 +346,12 @@ void GMMDetect(cv::VideoCapture capture, vector<Rect> &boundRect, double &avg_ti
 		cv::Ptr<cv::cuda::Filter> filterGaus = cv::cuda::createGaussianFilter(fgmask.type(), fgmask.type(), { 3,3 }, -1);
 		filterGaus->apply(fgmask, fgmask);
 
+		cuda::resize(fgmask, fgmask, src.size());
 		//Download result from Gpu
 		cv::Mat result;
 		fgmask.download(result);
+
+		
 
 		// Radar Detection
 		//cv::Mat radar_img = orig_img(Radar_scr);
@@ -417,6 +409,7 @@ void GMMDetect(cv::VideoCapture capture, vector<Rect> &boundRect, double &avg_ti
 				savedBoundBox.push_back(boundRect[i]);
 			}
 		}
+		boundRectVec.push_back(savedBoundBox);
 
 		/*double maxArea = 0.0
 		if ((savedBoundBox.size() == 0) && (contours.size() != 0))
@@ -431,9 +424,14 @@ void GMMDetect(cv::VideoCapture capture, vector<Rect> &boundRect, double &avg_ti
 		}
 		}
 		}*/
+
 		duration = static_cast<double>(cv::getTickCount()) - duration;
 		duration /= cv::getTickFrequency();
-		total_time += duration;
+
+		if (count > 5) {
+			total_time += duration;
+		}
+	
 		count++;
 		std::cout << "\n Duration :" << duration;
 		std::cout << "  FPS: " << 1 / duration;
@@ -462,14 +460,16 @@ void GMMDetect(cv::VideoCapture capture, vector<Rect> &boundRect, double &avg_ti
 		//cv::waitKey(50);
 		if (cv::waitKey(1) > 0)
 			break;
+		if (count == 15)
+			break;
 	}
 
 
 	//duration1 = static_cast<double>(cv::getTickCount()) - duration1;
 	//duration1 /= cv::getTickFrequency();
-	avg_time = total_time / count;
+	avg_time = total_time / (count-5);
+
 	std::cout << "\n Average Time :" << avg_time <<  std::endl;;
 
 	video.release();
-	_getch();
 }

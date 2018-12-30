@@ -3,6 +3,7 @@
 #include <ctime>
 #include <vector>
 #include <conio.h>
+#include <numeric>
 #include "opencv2/opencv.hpp"
 #include "RadarScreenDetect.h"
 #include "DetectAlgorithms.h"
@@ -185,8 +186,115 @@ bool doOverlap(Point l1, Point r1, Point l2, Point r2)
 		return false;
 
 	// If one rectangle is above other 
-	if (l1.y < r2.y || l2.y < r1.y)
+	if (l1.y > r2.y || l2.y > r1.y)
 		return false;
 
 	return true;
 }
+
+void trueFalsePositiveRate(vector<vector<vector<vector<int>>>> boundRectData, vector<vector<int>> groundTruth, vector<vector<int>> &falsePositiveCount, vector<vector<int>> &truePositiveCount, 
+	vector<vector<double>> &precision, vector<double> &recall,vector<vector<double>> &IoU) {
+
+	vector<vector<int>> falseNegativeCount;
+
+	//Parameter
+	for (int i = 0; i < boundRectData.size(); i++) {
+		vector<double> IoUtime(0.0);
+		vector<double> precisionTime(0.0);
+		//vector<double> recallTime(0.0);
+		falsePositiveCount.push_back(vector<int>(0));
+		falseNegativeCount.push_back(vector<int>(0));
+		truePositiveCount.push_back(vector<int>(0));
+		int avgCount = 0;
+		//Time
+		for (int j = 0; j < boundRectData[i].size(); j++) {
+			double IoUavg = 0.0;
+			falsePositiveCount[i].push_back(0);
+			falseNegativeCount[i].push_back(0);
+			truePositiveCount[i].push_back(0);
+
+			//Key points of ground truth rectangle
+			cv::Point l2(groundTruth[j][0], groundTruth[j][1]);
+			cv::Point r2(groundTruth[j][0] + groundTruth[j][2], groundTruth[j][1] + groundTruth[j][3]);
+
+			//Bounding box
+			for (int k = 0; k < boundRectData[i][j].size(); k++) {
+				//Key points of bounding rectangles
+				cv::Point l1(boundRectData[i][j][k][0], boundRectData[i][j][k][1]);
+				cv::Point r1(boundRectData[i][j][k][0] + boundRectData[i][j][k][2], boundRectData[i][j][k][1] + boundRectData[i][j][k][3]);
+
+				//Check for overlap resulting in false or true positive
+				if (doOverlap(l1, r1, l2, r2)) {
+					truePositiveCount[i][j]++;
+					IoUavg = IntersectionOverUnion(l1, r1, l2, r2);
+					avgCount++;
+				}
+				else {
+					falsePositiveCount[i][j]++;
+				}
+			}
+
+			// When present target is not correctly detected, increase false negative count
+			if ((truePositiveCount[i][j] == 0) && (groundTruth[j][0] != 0) && (groundTruth[j][1] != 0)) {
+				falseNegativeCount[i][j]++;
+			}
+
+			// Area over Union per time step
+			IoUtime.push_back(IoUavg);
+			precisionTime.push_back(truePositiveCount[i][j] / float(truePositiveCount[i][j] + falsePositiveCount[i][j]));
+			//recallTime.push_back(truePositiveCount[i][j] / float(truePositiveCount[i][j] + falseNegativeCount[i][j]));
+		}
+		// Area over Union for parameter set
+		IoU.push_back(IoUtime);
+		precision.push_back(precisionTime);
+		recall.push_back(std::accumulate(truePositiveCount[i].begin(), truePositiveCount[i].end(), 0)/float(std::accumulate(truePositiveCount[i].begin(), truePositiveCount[i].end(), 0)+ std::accumulate(falseNegativeCount[i].begin(), falseNegativeCount[i].end(), 0)));
+	}
+}
+
+double IntersectionOverUnion(cv::Point l1,cv::Point r1,cv::Point l2,cv::Point r2) {
+
+	int xA = max(l1.x, l2.x);
+	int yA = max(l1.y, l2.y);
+	int xB = min(r1.x, r2.x);
+	int yB = min(r1.y, r2.y);
+
+	//Compute the area of intersection rectangle
+	double interArea = max(0, xB - xA) * max(0, yB - yA);
+
+	//Compute the area of both the prediction and ground - truth
+	//Rectangles
+	double boxAArea = (r1.x - l1.x) * (r1.y - l1.y);
+	double boxBArea = (r2.x - l2.x) * (r2.y - l2.y);
+		
+
+	//Compute the intersection over union by taking the intersection
+	//area and dividing it by the sum of prediction + ground - truth
+	//areas - the interesection area
+	double IoU = interArea / float(boxAArea + boxBArea - interArea);
+	return IoU;
+}
+
+void writeBoundRectFile(vector<vector<vector<Rect>>> boundRectData, std::ofstream &File) {
+	//Parameter 
+	for (int n = 0; n < boundRectData.size(); n++) {
+		//Time 
+		for (int k = 0; k < boundRectData[n].size(); k++) {
+			//Bounding box 
+			for (int l = 0; l < boundRectData[n][k].size(); l++) {
+				File << boundRectData[n][k][l].x << "," << boundRectData[n][k][l].y << "," << boundRectData[n][k][l].width << "," << boundRectData[n][k][l].height << endl;
+			}
+			File << "NT" << endl;
+		}
+		File << "NP" << endl;
+	}
+	File.close();
+}
+
+std::string getFileString(std::string fileName) {
+	std::string path = "F:\\Afstuderen\\";
+	std::stringstream ss;
+	ss << path << fileName;
+	std::string file = ss.str();
+	return file;
+}
+//void writeEvaluationFile(vector<vector<vector<Rect>>> boundRectData, std::ofstream &File)
