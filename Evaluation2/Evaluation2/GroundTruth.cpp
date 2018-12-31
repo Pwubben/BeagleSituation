@@ -11,6 +11,121 @@
 using namespace cv;
 using namespace std;
 
+void DataGeneration(std::string videoFile, std::string groundTruthFile, std::string boundRectFileSal, std::string avgTimeFileSal, std::string boundRectFileGMM, std::string avgTimeFileGMM, std::string labelFile, int GT_offset) {
+	
+	cout << videoFile << endl;
+	vector<vector<int>> GroundTruth;
+	vector<Rect> GT;
+	readGroundTruth(getFileString(groundTruthFile), GroundTruth);
+	for (int s = 0; s < GroundTruth.size(); s++) {
+		Rect coord(GroundTruth[s][0], GroundTruth[s][1], GroundTruth[s][2], GroundTruth[s][3]);
+		GT.push_back(coord);
+	}
+
+	// Declare VideoCapture object for storing video
+	cv::VideoCapture capture(getFileString(videoFile));
+
+	//Output parameters of lgorithms
+	vector<vector<Rect>> boundRectSaliency, boundRectGMM;
+	double avg_timeSaliency = 0.0, avg_timeGMM = 0.0;
+
+	//Output storage vectors over multiple parameter settings
+	vector<vector<vector<Rect>>> boundRectSaliencyData, boundRectGMMData;
+	vector<double> avg_timeSaliencyData, avg_timeGMMData;
+
+	//Matrix for storing parameter combinations
+	Mat data = cv::Mat::zeros(100, 6, CV_64F);
+	int cycleCountSal = 0;
+	int cycleCountGMM = 0;
+
+	//Run for all desired parameter combinations
+
+	for (double max_dimension = 600; max_dimension < 1601; max_dimension += 200) {
+		for (double sample_step = 10; sample_step < 26; sample_step += 15) {
+			for (double stdThres = 3.5; stdThres < 5.6; stdThres += 0.5) {
+				//Clear data
+				boundRectSaliency.clear();
+				capture.release();
+
+				cv::VideoCapture capture(getFileString(videoFile));
+				//Parameter documentation
+				data.at<double>(cycleCountSal, 0) = max_dimension;
+				data.at<double>(cycleCountSal, 1) = sample_step;
+				data.at<double>(cycleCountSal, 2) = stdThres;
+
+				SaliencyDetect(capture, boundRectSaliency, avg_timeSaliency, max_dimension, sample_step, stdThres, GT, GT_offset);
+
+				boundRectSaliencyData.push_back(boundRectSaliency);
+				avg_timeSaliencyData.push_back(avg_timeSaliency);
+				cycleCountSal++;
+			}
+		}
+		for (double backGroundRatio = 0.65; backGroundRatio < 0.96; backGroundRatio += 0.15) {
+			for (double timeHorizon = 80; timeHorizon < 201; timeHorizon += 60) {
+
+
+				//Clear data
+				boundRectGMM.clear();
+				capture.release();
+
+				cv::VideoCapture capture(getFileString(videoFile));
+
+				data.at<double>(cycleCountGMM, 3) = max_dimension;
+				data.at<double>(cycleCountGMM, 4) = backGroundRatio;
+				data.at<double>(cycleCountGMM, 5) = timeHorizon;
+
+				GMMDetect(capture, boundRectGMM, avg_timeGMM, max_dimension, backGroundRatio, timeHorizon, GT, GT_offset);
+				boundRectGMMData.push_back(boundRectGMM);
+				avg_timeGMMData.push_back(avg_timeGMM);
+
+				cycleCountGMM++;
+			}
+		}
+	}
+
+	//Saliency
+	//Bounding rect vector file write
+	std::string file = getFileString(boundRectFileSal);
+	std::ofstream ss3_scBoundRectSalFile(file, std::ofstream::out | std::ofstream::trunc);
+
+	writeBoundRectFile(boundRectSaliencyData, ss3_scBoundRectSalFile);
+
+	//Average time file write
+	file = getFileString(avgTimeFileSal);
+
+	ofstream avgtimeSalFile(file, std::ofstream::out | std::ofstream::trunc);
+
+	for (int n = 0; n<avg_timeSaliencyData.size(); n++)
+	{
+		avgtimeSalFile << avg_timeSaliencyData[n] << endl;
+	}
+	avgtimeSalFile.close();
+
+	//GMM
+	//Bounding rect vector file write
+	file = getFileString(boundRectFileGMM);
+	std::ofstream ss3_scBoundRectGMMFile(file, std::ofstream::out | std::ofstream::trunc);
+
+	writeBoundRectFile(boundRectGMMData, ss3_scBoundRectGMMFile);
+
+	//Average time file write
+	file = getFileString(avgTimeFileGMM);
+
+	ofstream avgtimeGMMFile(file, std::ofstream::out | std::ofstream::trunc);
+	for (int n = 0; n<avg_timeGMMData.size(); n++)
+	{
+		avgtimeGMMFile << avg_timeGMMData[n] << endl;
+	}
+	avgtimeGMMFile.close();
+
+	//Parameter file write
+	file = getFileString(labelFile);
+	ofstream vectorlabelFile(file, std::ofstream::out | std::ofstream::trunc);
+
+	vectorlabelFile << cv::format(data, cv::Formatter::FMT_CSV) << std::endl;
+	vectorlabelFile.close();
+}
+
 void GroundTruth(cv::VideoCapture capture,vector<Rect> &boundRectVec) {
 	Mat data;
 	capture.read(data);
@@ -104,8 +219,8 @@ void GroundTruth(cv::VideoCapture capture,vector<Rect> &boundRectVec) {
 		}*/
 		//imshow("src_draw", src);
 		count++;
-		if (count == 10)
-			break;
+		//if (count == 10)
+		//	break;
 
 		if (cv::waitKey(1) > 0)
 			break;
@@ -296,5 +411,37 @@ std::string getFileString(std::string fileName) {
 	ss << path << fileName;
 	std::string file = ss.str();
 	return file;
+}
+
+void writeFileNames(std::string File, ::string& videoFile, std::string& boundRectFileSal, std::string& avgTimeFileSal, std::string& boundRectFileGMM, std::string& avgTimeFileGMM, std::string& labelFile) {
+	std::stringstream ss;
+	ss << File << ".avi";
+	videoFile = ss.str();
+	ss.clear();
+
+	std::stringstream ss1;
+	ss1 << File << "BoundRectSaliency.csv";
+	boundRectFileSal = ss1.str();
+	ss1.clear();
+
+	std::stringstream ss2;
+	ss2 << File << "avgTimeSaliency.csv";
+	avgTimeFileSal = ss2.str();
+	ss2.clear();
+
+	std::stringstream ss3;
+	ss3 << File << "BoundRectGMM.csv";
+	boundRectFileGMM = ss3.str();
+	ss3.clear();
+
+	std::stringstream ss4;
+	ss4 << File << "avgTimeGMM.csv";
+	avgTimeFileGMM = ss4.str();
+	ss4.clear();
+
+	std::stringstream ss5;
+	ss5 << File << "vectorlabel.csv";
+	labelFile = ss5.str();
+	ss5.clear();
 }
 //void writeEvaluationFile(vector<vector<vector<Rect>>> boundRectData, std::ofstream &File)

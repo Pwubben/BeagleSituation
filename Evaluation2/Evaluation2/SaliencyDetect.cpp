@@ -25,7 +25,7 @@
 using namespace cv;
 using namespace std;
 
-void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec,double &avg_time, double max_dimension, double sample_step,double stdThres)
+void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec,double &avg_time, double max_dimension, double sample_step,double stdThres, vector<Rect> GT,int GT_offset)
 {
 
 	int dilation_width_1 = 3;
@@ -62,7 +62,7 @@ void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec
 
 	// Timing variables
 	double total_time = 0.0, count = 0.0, duration;
-	int  loopcount = 0;
+	int  loopcount = 0, GTcount = 0;
 
 	Mat left_vec, right_vec;
 	Point maxL, maxR, minL, minR;
@@ -183,7 +183,7 @@ void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec
 		}
 
 		// Resize the saliency map
-		resize(result, result, src_cr.size());
+		//resize(result, result, src_cr.size());
 
 		Mat mask_trh, masked_img;
 		cv::threshold(result, masked_img, trh, 1, THRESH_BINARY);
@@ -203,16 +203,23 @@ void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec
 			approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
 			boundRect[i] = boundingRect(Mat(contours_poly[i]));
 		}
-		boundRectVec.push_back(boundRect);
 
 		//Timing
 		duration = static_cast<double>(cv::getTickCount()) - duration;
 		duration /= cv::getTickFrequency();
 
-		if (count > 5) {
+		for (int i = 0; i < boundRect.size(); i++) {
+			boundRect[i].x = boundRect[i].x*(float)(src.cols / (float)(max_dimension*w / maxD));
+			boundRect[i].width = boundRect[i].width*(float)(src.cols / (float)(max_dimension*w / maxD));
+			boundRect[i].y = boundRect[i].y*(float)(src.rows / (float)(max_dimension*h / maxD));
+			boundRect[i].height = boundRect[i].height*(float)(src.rows / (float)(max_dimension*h / maxD));
+		}
+		boundRectVec.push_back(boundRect);
+
+		if (count > 10) {
 			total_time += duration;
 		}
-		count++;
+		
 
 		// Draw bonding rects 
 		Mat drawing = Mat::zeros(mask_trh.size(), CV_8UC3);
@@ -223,6 +230,15 @@ void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec
 		{
 			rectangle(src_cr, boundRect[i].tl(), boundRect[i].br(), color);
 		}
+
+		//Ground truth
+		color = Scalar(0, 0, 200);
+		rectangle(src_cr, GT[GTcount].tl(), GT[GTcount].br(), color);
+
+		if (count > GT_offset) {
+			GTcount++;
+		}
+		
 		//line(src_cr, HorL, HorR, Scalar(0, 0, 255),5);
 
 		//src_cr.copyTo(src(sea_scr));
@@ -231,27 +247,28 @@ void SaliencyDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec
 
 			video.write(src);
 		}
-		std::cout << "\n Time: " << duration << std::endl;
+		//std::cout << "\n Time: " << duration << std::endl;
 		//Show result
 		cv::imshow("Masked_img", src_cr);
 
 		if (cv::waitKey(1) > 0)
 			break;
 
-		cout << count << endl;
-		waitKey(50);
-		if (count == 15)
+		count++;
+		if (count == 1)
 			break;
 	}
-	avg_time = total_time / (count-5);
-	std::cout << "\n Average Time: " << avg_time << std::endl;
+	avg_time = total_time / (count-10);
+	std::cout << "\n" << max_dimension << ", " << sample_step << ", " << stdThres << ", Average Time: " << avg_time << std::endl;
 	video.release();
-	//_getch();
+	destroyAllWindows();
+
 }
 
-void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, double &avg_time, float max_dimension, double backGroundRatio) {
+void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, double &avg_time, float max_dimension, double backGroundRatio, double timeHorizon, vector<Rect> GT,int GT_offset) {
 	
 	double total_time = 0.0, count = 0.0, duration = 0.0;
+	int GTcount = 0;
 
 	//GPU objects
 	cv::Mat src,src_small;
@@ -270,7 +287,7 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 	frame.upload(src);
 	fgimg.create(frame.size(), frame.type());
 
-	cv::Ptr<cv::cuda::BackgroundSubtractorMOG> mog = cv::cuda::createBackgroundSubtractorMOG(80, 5, backGroundRatio);
+	cv::Ptr<cv::cuda::BackgroundSubtractorMOG> mog = cv::cuda::createBackgroundSubtractorMOG(timeHorizon, 5, backGroundRatio);
 	cv::cuda::GpuMat bgimg;
 	fgimg.setTo(cv::Scalar::all(0));
 
@@ -280,6 +297,7 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 	//Max dimension 
 	float w = (float)src.cols, h = (float)src.rows;
 	float maxD = max(w, h);
+	double scale;
 
 
 	while (1)
@@ -319,7 +337,7 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 		// Upload to GPU
 		src = src(sea_scr);
 		resize(src, src_small, Size((int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD)), 0.0, 0.0, INTER_AREA);
-
+		scale = ((float)(max_dimension*w / maxD)* (float)(max_dimension*h / maxD)) / float((src.rows*src.cols));
 		duration = static_cast<double>(cv::getTickCount());
 
 		frame.upload(src_small);
@@ -346,12 +364,11 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 		cv::Ptr<cv::cuda::Filter> filterGaus = cv::cuda::createGaussianFilter(fgmask.type(), fgmask.type(), { 3,3 }, -1);
 		filterGaus->apply(fgmask, fgmask);
 
-		cuda::resize(fgmask, fgmask, src.size());
+		//cuda::resize(fgmask, fgmask, src.size());
 		//Download result from Gpu
 		cv::Mat result;
 		fgmask.download(result);
 
-		
 
 		// Radar Detection
 		//cv::Mat radar_img = orig_img(Radar_scr);
@@ -388,9 +405,9 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 		//Contour locator
 		std::vector<std::vector<cv::Point> > contours;
 		std::vector<cv::Vec4i> hierarchy;
-		findContours(result, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+		cv::findContours(result, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
-		double minArea = 10;
+		double minArea = 20;
 		std::vector<cv::Rect> savedBoundBox;
 
 		std::vector<std::vector<cv::Point> > contours_poly(contours.size());// contours.size());
@@ -409,6 +426,18 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 				savedBoundBox.push_back(boundRect[i]);
 			}
 		}
+
+		duration = static_cast<double>(cv::getTickCount()) - duration;
+		duration /= cv::getTickFrequency();
+		
+
+		for (int i = 0; i < savedBoundBox.size(); i++) {
+			savedBoundBox[i].x = savedBoundBox[i].x*(float)(src.cols / (float)(max_dimension*w / maxD));
+			savedBoundBox[i].width = savedBoundBox[i].width*(float)(src.cols / (float)(max_dimension*w / maxD));
+			savedBoundBox[i].y = savedBoundBox[i].y*(float)(src.rows / (float)(max_dimension*h / maxD));
+			savedBoundBox[i].height = savedBoundBox[i].height*(float)(src.rows / (float)(max_dimension*h / maxD));
+		}
+
 		boundRectVec.push_back(savedBoundBox);
 
 		/*double maxArea = 0.0
@@ -425,16 +454,13 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 		}
 		}*/
 
-		duration = static_cast<double>(cv::getTickCount()) - duration;
-		duration /= cv::getTickFrequency();
-
-		if (count > 5) {
+		if (count > 10) {
 			total_time += duration;
 		}
 	
-		count++;
-		std::cout << "\n Duration :" << duration;
-		std::cout << "  FPS: " << 1 / duration;
+		
+		//std::cout << "\n Duration :" << duration;
+		//std::cout << "  FPS: " << 1 / duration;
 
 		// Draw bonding rects 
 		cv::Mat drawing = cv::Mat::zeros(result.size(), CV_8UC3);
@@ -443,33 +469,45 @@ void GMMDetect(cv::VideoCapture capture, vector<vector<Rect>> &boundRectVec, dou
 
 		for (int i = 0; i < savedBoundBox.size(); i++)
 		{
-			rectangle(src, savedBoundBox[i].tl(), savedBoundBox[i].br(), color);
+			cv::rectangle(src, savedBoundBox[i].tl(), savedBoundBox[i].br(), color);
 		}
+		//resize(src_small, src_small, src.size());
 
+		
+
+		//Ground truth
+		color = Scalar(0, 0, 200);
+		cv::rectangle(src, GT[GTcount].tl(), GT[GTcount].br(), color);
+		if (count > GT_offset) {
+			GTcount++;
+		}
 		//cv::waitKey(30);
 		cv::imshow("video", src);
 		//cv::imshow("res", result);
-
+		
 
 		if (false) {
 
 			video.write(src);
 		}
 
-		
+		count++;
 		//cv::waitKey(50);
 		if (cv::waitKey(1) > 0)
 			break;
-		if (count == 15)
+	
+		
+		if (count == 1)
 			break;
 	}
 
 
 	//duration1 = static_cast<double>(cv::getTickCount()) - duration1;
 	//duration1 /= cv::getTickFrequency();
-	avg_time = total_time / (count-5);
+	avg_time = total_time / (count-10);
 
-	std::cout << "\n Average Time :" << avg_time <<  std::endl;;
+	std::cout << "\n" << max_dimension << ", " << backGroundRatio << ", "<< timeHorizon << ", Average Time: " << avg_time << std::endl;
 
+	destroyAllWindows();
 	video.release();
 }

@@ -1,6 +1,10 @@
-void SaliencyDetect(cv::VideoCapture capture, std::vector<std::vector<cv::Rect>> &boundRectVec, double &avg_time, double max_dimension, double sample_step, double stdThres);
+void SaliencyDetect(cv::VideoCapture capture, std::vector<std::vector<cv::Rect>> &boundRectVec, double &avg_time, double max_dimension, double sample_step, double stdThres,std::vector<cv::Rect> GT,int GT_offset);
 
-void GMMDetect(cv::VideoCapture capture, std::vector<std::vector<cv::Rect>> &boundRectVec, double &avg_time, float max_dimension, double backGroundRatio);
+void GMMDetect(cv::VideoCapture capture, std::vector<std::vector<cv::Rect>> &boundRectVec, double &avg_time, float max_dimension, double backGroundRatio, double timeHorizon, std::vector<cv::Rect> GT,int GT_offset);
+
+void DataGeneration(std::string videoFile, std::string groundTruthFile, std::string boundRectFileSal, std::string avgTimeFileSal, std::string boundRectFileGMM, std::string avgTimeFileGMM, std::string labelFile, int GT_offset);
+
+void writeFileNames(std::string File, std::string& videoFile, std::string& boundRectFileSal, std::string& avgTimeFileSal, std::string& boundRectFileGMM, std::string& avgTimeFileGMM, std::string& labelFile);
 
 //Ground Truth Generation
 void GroundTruth(cv::VideoCapture capture, std::vector<cv::Rect> &boundRectVec);
