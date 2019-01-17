@@ -56,6 +56,7 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 
 	int startFrame = FPS*begin+correction;
 	int endFrame = FPS*end - startFrame;
+	endFrame = 1290;
 
 	// Cycle trough frames until video is unpaused
 	for (int i = 0; i < unPauseFrame; i++) {
