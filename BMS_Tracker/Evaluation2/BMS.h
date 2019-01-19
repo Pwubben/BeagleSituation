@@ -34,12 +34,7 @@ private:
 	int mColorSpace;
 	cv::Mat getAttentionMap(const cv::Mat& bm, int dilation_width_1, bool toNormalize, bool handle_border);
 	void whitenFeatMap(const cv::Mat& img, float reg);
-	//void computeBorderPriorMap(float reg, float marginRatio);
 };
-
-//void postProcessByRec8u(cv::Mat& salmap, int kernelWidth);
-//void postProcessByRec(cv::Mat& salmap, int kernelWidth);
-
 
 
 #endif

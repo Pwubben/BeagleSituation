@@ -1,0 +1,252 @@
+#include "stdafx.h"
+#include "Tracker.h"
+#include "BMS.h"
+#include "opencv2/opencv.hpp"
+
+using namespace cv;
+using namespace std;
+
+struct d {
+	vector<Point2f> radarIdx;
+	vector<Rect> cameraIdx;
+};
+
+void Detection::run(std::string File, std::string groundTruthFile,int GT_offset, int stopFrame) {
+	cout << File << endl;
+	//Load ground truth data
+	std::vector<Rect> GT;
+	std::vector<std::vector<int>> GroundTruth = readGroundTruth(getFileString(groundTruthFile));
+
+	for (int s = 0; s < GroundTruth.size(); s++) {
+		Rect coord(GroundTruth[s][0], GroundTruth[s][1], GroundTruth[s][2], GroundTruth[s][3]);
+		GT.push_back(coord);
+	}
+
+	int count = 0;
+
+	//Performance parameters
+	double max_dimension = 1000;
+	double sample_step = 25;
+	double threshold = 5;
+
+	bool check(false);
+	try {
+		if (!check) {
+
+			cv::VideoCapture capture(getFileString(File));
+			Mat src;
+
+			capture >> src;
+			//Function storing window information - aanpassen
+			windowDetect(src,max_dimension); //radarScreenDetect()
+
+			while (1) {
+				capture >> src;
+				if (src.empty())
+					break;
+
+				struct d info;
+				//Radar detector
+				info.radarIdx = radarDetection(src(radarWindow));
+				//Camera detector
+				info.cameraIdx = saliencyDetection(src, max_dimension, sample_step, threshold, GT, GT_offset, stopFrame);
+				//data_ass_.run(info)
+				count++;
+				if (count == stopFrame)
+					break;
+			}
+		}
+		else {
+			check = false;
+		}
+	}
+	catch (std::exception e) {
+		check = true;
+		std::cout << e.what() << std::endl;
+	}
+	//std::cout << "ret (python)  = " << std::endl << format(data, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
+
+}
+
+void Detection::windowDetect(cv::Mat src,double max_dimension) {
+	cv::Mat src_gray;
+	cv::cvtColor(src, src_gray, CV_BGR2GRAY);
+	GaussianBlur(src_gray, src_gray, cv::Size(9, 9), 2, 2);
+
+	std::vector<cv::Vec3f> circles;
+	cv::HoughCircles(src_gray, circles, CV_HOUGH_GRADIENT, 1, 1000, 100, 50);
+
+	// Determine circle properties
+	radarCenter = { cvRound(circles[0][0]), cvRound(circles[0][1]) };
+	radarRadius = cvRound(circles[0][2]);
+	// circle center
+	//circle(src, radarCenter, 3, cv::Scalar(0, 255, 0), -1, 8, 0);
+	// circle outline
+	//circle(src, radarCenter, radarRadius, cv::Scalar(0, 0, 255), 3, 8, 0);
+
+	int radarMin = radarCenter.y - radarRadius;
+	if (radarMin < 0) {
+		radarMin = 0;
+	}
+
+	radarWindow = cv::Rect(radarCenter.x - radarRadius, radarMin + 35, 2 * radarRadius, 2 * radarRadius - 35);
+	seaWindow = cv::Rect(10, radarCenter.y + radarRadius + 70, src.cols - 10, src.rows - radarCenter.y - radarRadius - 70);
+	//cv::imshow("Hough", src);
+	//cv::waitKey(0);
+	radarCenter.x -= radarWindow.x;
+	radarCenter.y -= radarWindow.y;
+
+	src = src(seaWindow);
+
+	float w = (float)src.cols, h = (float)src.rows;
+	float maxD = max(w, h);
+	resizeDim = { (int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD) };
+
+}
+
+vector<Point2f> Detection::radarDetection(Mat src) {
+	// Radar Detection	
+	std::vector<cv::Mat> channels_rad;
+	cv::split(src, channels_rad);
+
+	cv::Mat radar_mask;
+	cv::threshold(channels_rad[2], radar_mask, 120, 255, CV_THRESH_BINARY);
+	circle(src, radarCenter, 1, cv::Scalar(0, 255, 0), -1, 8, 0);
+	
+	//std::cout << "ret (python)  = " << std::endl << format(radar_img, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
+	std::vector<std::vector<cv::Point> > contours;
+	std::vector<cv::Vec4i> hierarchy_rad;
+	findContours(radar_mask, contours, hierarchy_rad, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+	std::vector<float> radius_detection(contours.size());
+	std::vector<Point2f> location(contours.size());
+	double range, angle;
+
+	for (int i = 0; i < contours.size(); i++)
+	{
+		minEnclosingCircle((Mat)contours[i], location[i], radius_detection[i]);
+		range = sqrt(pow(double(radarCenter.x - location[i].x), 2) + pow(double(radarCenter.y - location[i].y), 2)) / radarRadius * radarRange;
+		angle = tan(double(radarCenter.x - location[i].x) / double(radarCenter.y - location[i].y)) * 180 / 3.14;
+		location[i].x = range;
+		location[i].y = angle;
+	}
+
+	return location;
+}
+
+vector<Rect> Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, vector<Rect> GT, int GT_offset, int stopFrame)
+{
+	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true)
+
+	//Crop image to separate radar and visuals
+	src = src(seaWindow);
+
+	//Resize image
+	resize(src, src_small, resizeDim, 0.0, 0.0, INTER_AREA);
+
+	//Start timing
+	double duration = static_cast<double>(cv::getTickCount());
+
+	// Computing saliency 
+	BMS bms(src_small, dilation_width_1, use_normalize, handle_border, colorSpace, whitening);
+	bms.computeSaliency((double)sample_step);
+
+	sResult = bms.getSaliencyMap();
+
+	// Post-processing 
+	if (dilation_width_2 > 0)
+		dilate(sResult, sResult, Mat(), Point(-1, -1), dilation_width_2);
+	if (blur_std > 0)
+	{
+		int blur_width = (int)MIN(floor(blur_std) * 4 + 1, 51);
+		GaussianBlur(sResult, sResult, Size(blur_width, blur_width), blur_std, blur_std);
+	}
+
+	//Mean and standard deviation of result map
+	meanStdDev(sResult, mean, std);
+
+	//std::cout << "ret (python)  = " << std::endl << format(result, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
+
+	thr = mean.at<double>(0) + threshold * std.at<double>(0);
+
+	//Thresholding result map
+	cv::threshold(sResult, masked_img, thr, 1, THRESH_BINARY);
+	masked_img.convertTo(mask_trh, CV_8UC1);
+
+	// Find contours in mask
+	vector<vector<Point>> contours;
+	vector<Vec4i> hierarchy;
+	cv::findContours(mask_trh, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+
+	vector<vector<Point> > contours_poly(contours.size()); //Remove
+	vector<Rect> boundRect(contours.size());
+
+	for (int i = 0; i < contours.size(); i++)
+	{
+		approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
+		boundRect[i] = boundingRect(Mat(contours_poly[i]));
+	}
+
+	//Resize bounding rectangles to compare
+	for (int i = 0; i < boundRect.size(); i++) {
+		boundRect[i].x = boundRect[i].x*(float)(src.cols / (float)(max_dimension*src.cols / maxD));
+		boundRect[i].width = boundRect[i].width*(float)(src.cols / (float)(max_dimension*src.cols / maxD));
+		boundRect[i].y = boundRect[i].y*(float)(src.rows / (float)(max_dimension*src.rows / maxD));
+		boundRect[i].height = boundRect[i].height*(float)(src.rows / (float)(max_dimension*src.rows / maxD));
+	}
+	duration = static_cast<double>(cv::getTickCount()) - duration;
+	duration /= cv::getTickFrequency();
+
+	cout << duration << endl;
+	// Draw bonding rects 
+	Mat drawing = Mat::zeros(mask_trh.size(), CV_8UC3);
+	RNG rng(0xFFFFFFFF);
+	Scalar color = Scalar(0, 200, 50);
+
+	Mat drawWindow = src.clone();
+	for (int i = 0; i < contours.size(); i++)
+	{
+		rectangle(drawWindow, boundRect[i].tl(), boundRect[i].br(), color);
+	}
+
+	imshow("Src", drawWindow);
+	waitKey(1);
+	
+
+	//End timing
+
+	return boundRect;
+	//Ground truth
+	//color = Scalar(0, 0, 200);
+	//rectangle(src_cr, GT[GTcount].tl(), GT[GTcount].br(), color);
+}
+
+vector<vector<int>> Detection::readGroundTruth(std::string fileName){
+
+	vector<vector<int>> groundTruth;
+	ifstream file(fileName);
+	string line;
+	while (getline(file, line))
+	{
+		vector<int> row;
+		stringstream iss(line);
+		string val;
+
+		// while getline gives correct result
+		while (getline(iss, val, ','))
+		{
+			row.push_back(stoi(val));
+		}
+		groundTruth.push_back(row);
+	}
+
+	return groundTruth;
+}
+
+std::string Detection::getFileString(std::string fileName) {
+	std::string path = "F:\\Afstuderen\\";
+	std::stringstream ss;
+	ss << path << fileName;
+	std::string file = ss.str();
+	return file;
+}

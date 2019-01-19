@@ -36,35 +36,46 @@ BMS::BMS(const Mat& src, int dw1, bool nm, bool hb, int colorSpace, bool whiteni
 
 void BMS::computeSaliency(double step)
 {
-  #pragma omp parallel for //collapse(2)
-	for (int i = 0; i<mFeatureMaps.size(); ++i)
-	{
+  //#pragma omp parallel for //collapse(2)
+	/*for (int i = 0; i<mFeatureMaps.size(); ++i)
+	{*/
 		
-		double max_, min_;
-		minMaxLoc(mFeatureMaps[i], &min_, &max_);
+		/*double max_, min_;
+		minMaxLoc(mFeatureMaps[0], &min_, &max_);
 		int max = floor(max_);
-		int min = floor(min_);
-	
-	
-		for (int thresh = min; thresh < max; thresh += step)
-		{
+		int min = floor(min_);*/
+		//cv::imshow("src", mSrc);
+		//waitKey(0);
+		//imwrite("../../images/Gray_Image.jpg", mSrc);
 
-			Mat bm = (mFeatureMaps[i] > thresh - step) & (mFeatureMaps[i]<thresh);
-			//bm = mFeatureMaps[i] < thresh;
-			//imshow("Boolean Map", bm);
-			//waitKey(30);
-			Mat am = getAttentionMap(bm, mDilationWidth_1, mNormalize, mHandleBorder);
-
-		
-			//imshow("Attention Map", am);
-			//cv::waitKey(0);
-			mSaliencyMap += am;
-			//imshow("Saliency Map", mSaliencyMap);
-
-			mAttMapCount++;
-			//waitKey(30);
+		for (int thresh = 255; 0 < thresh; thresh -= 20) {
+			Mat bm = (mFeatureMaps[1] > thresh - step) & (mFeatureMaps[1]<thresh);
+			Mat maskImg;
+			Mat prjImg = mSrc.clone();
+			prjImg.copyTo(maskImg, bm);
+			imshow("res",maskImg);
+			waitKey(0);
+			destroyAllWindows;
 		}
-	}
+	//	for (int thresh = min; thresh < max; thresh += step)
+	//	{
+
+	//		Mat bm = (mFeatureMaps[i] > thresh - step) & (mFeatureMaps[i]<thresh);
+	//		//bm = mFeatureMaps[i] < thresh;
+	//		//imshow("Boolean Map", bm);
+	//		//waitKey(30);
+	//		Mat am = getAttentionMap(bm, mDilationWidth_1, mNormalize, mHandleBorder);
+
+	//	
+	//		//imshow("Attention Map", am);
+	//		//cv::waitKey(0);
+	//		mSaliencyMap += am;
+	//		//imshow("Saliency Map", mSaliencyMap);
+
+	//		mAttMapCount++;
+	//		//waitKey(30);
+	//	}
+	//}
 }
 
 

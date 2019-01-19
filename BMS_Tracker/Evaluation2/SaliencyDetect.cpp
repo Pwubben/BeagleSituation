@@ -17,7 +17,6 @@
 #include "opencv2/video.hpp"
 #include "DetectAlgorithms.h"
 #include <opencv2/core/opengl.hpp>
-//#include "opencv2/cudabgsegm.hpp"
 #include <algorithm>
 #include "trim.h"
 #include "BMS.h"
@@ -26,72 +25,19 @@
 using namespace cv;
 using namespace std;
 
-void SaliencyDetect(cv::VideoCapture capture,double &avg_time, double max_dimension, double sample_step,double threshold, vector<Rect> GT,int GT_offset, int stopFrame)
+vector<Rect> SaliencyDetect(Mat src, double max_dimension, double sample_step,double threshold, vector<Rect> GT,int GT_offset, int stopFrame)
 {
-	int dilation_width_1 = 3;
-	int dilation_width_2 = 3;
-	float blur_std = 3;
-	bool use_normalize = 1;
-	bool handle_border = 0;
-	int colorSpace = 1;
-	bool whitening = 0;
 
-	bool saveVid = false;
+	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true)
 
-	Mat src;
-	capture.read(src);
-
-	// Radar and sea windows
-	cv::Rect sea_scr;
-	cv::Rect radar_scr;
-	int radius;
-	cv::Point center = RadarScreenDetect(src, radar_scr, sea_scr,radius);
-
-	cv::Mat radar_src = src(radar_scr);
-	src = src(sea_scr);
-
-	// Preprocessing
-	float w = (float)src.cols, h = (float)src.rows;
-	float maxD = max(w, h);
-
-	//Create output video file
-	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true);
-
-	// Timing variables
-	double total_time = 0.0, duration;
-	int  loopcount = 0, count = 0;
-
-	// Thresholding variables
-	double trh = 0;
-	Mat mean, std;
-	Mat src_gray, src_small;
-	Size resize_size = {(int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD)};
-
-	while (1)
-	{
-		capture >> src;
-
-		if (src.empty())
-		{
-			// Reach end of the video file
-			break;
-		}
-
-		//Radar Detection
-		vector<Point2f> radarIdx = RadarDetection(src(radar_scr),center,radius);
-		for (int i = 0; i < radarIdx.size(); i++) {
-			cout << "Range: " << radarIdx[i].x << ", Angle:" << radarIdx[i].y << endl;
-		}
 		//Crop image to separate radar and visuals
-		src = src(sea_scr);
+		src = src(seaWindow);
 		
 		//Resize image
-		h = (float)src.rows;
-		maxD = max(w, h);
-		resize(src, src_small, Size((int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD)), 0.0, 0.0, INTER_AREA);
+		resize(src, src_small, resizeDim, 0.0, 0.0, INTER_AREA);
 
 		//Start timing
-		duration = static_cast<double>(cv::getTickCount());
+		//double duration = static_cast<double>(cv::getTickCount());
 
 		// Computing saliency 
 		BMS bms(src_small, dilation_width_1, use_normalize, handle_border, colorSpace, whitening);
@@ -113,7 +59,7 @@ void SaliencyDetect(cv::VideoCapture capture,double &avg_time, double max_dimens
 
 		//std::cout << "ret (python)  = " << std::endl << format(result, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
 
-		trh = mean.at<double>(0) + threshold * std.at<double>(0);
+		double trh = mean.at<double>(0) + threshold * std.at<double>(0);
 		Mat mask_trh, masked_img;
 		
 		//Thresholding result map
@@ -154,16 +100,11 @@ void SaliencyDetect(cv::VideoCapture capture,double &avg_time, double max_dimens
 		}
 
 		imshow("Src", drawWindow);
-		
-
-
+	
 		//End timing
-		duration = static_cast<double>(cv::getTickCount()) - duration;
-		duration /= cv::getTickFrequency();
-		if (count > 10) {
-			total_time += duration;
-		}
-		
+		//duration = static_cast<double>(cv::getTickCount()) - duration;
+		//duration /= cv::getTickFrequency();
+
 		//cout << duration << endl;
 		
 		//Ground truth
@@ -177,16 +118,9 @@ void SaliencyDetect(cv::VideoCapture capture,double &avg_time, double max_dimens
 			video.write(src);
 		}*/
 
-		if (cv::waitKey(1) > 0)
-			break;
 
-		count++;
-		if (count == stopFrame)
-			break;
-	}
+	
 
-	avg_time = total_time / (count-10);
-	std::cout <<" Average Time: " << avg_time << std::endl;
 	//video.release();
 	//cv::destroyAllWindows();
 }

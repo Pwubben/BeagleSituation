@@ -36,7 +36,7 @@ BMS::BMS(const Mat& src, int dw1, bool nm, bool hb, int colorSpace, bool whiteni
 
 void BMS::computeSaliency(double step)
 {
-  //#pragma omp parallel for collapse(2)
+  #pragma omp parallel for collapse(2)
 	for (int i = 0; i<mFeatureMaps.size(); ++i)
 	{
 		
