@@ -6,10 +6,7 @@
 using namespace cv;
 using namespace std;
 
-struct d {
-	vector<Point2f> radarIdx;
-	vector<Rect> cameraIdx;
-};
+
 
 void Detection::run(std::string File, std::string groundTruthFile,int GT_offset, int stopFrame) {
 	cout << File << endl;
@@ -25,7 +22,7 @@ void Detection::run(std::string File, std::string groundTruthFile,int GT_offset,
 	int count = 0;
 
 	//Performance parameters
-	double max_dimension = 1000;
+	double max_dimension = 800;
 	double sample_step = 25;
 	double threshold = 5;
 
@@ -43,14 +40,18 @@ void Detection::run(std::string File, std::string groundTruthFile,int GT_offset,
 			while (1) {
 				capture >> src;
 				if (src.empty())
-					break;
+					break;	
 
-				struct d info;
+				info.radarRange.clear();
+				info.radarAngle.clear();
+				info.cameraAngle.clear();
+
 				//Radar detector
-				info.radarIdx = radarDetection(src(radarWindow));
+				radarDetection(src(radarWindow));
 				//Camera detector
-				info.cameraIdx = saliencyDetection(src, max_dimension, sample_step, threshold, GT, GT_offset, stopFrame);
-				//data_ass_.run(info)
+				saliencyDetection(src, max_dimension, sample_step, threshold, GT, GT_offset, stopFrame);
+				
+				data_ass_.run(info)
 				count++;
 				if (count == stopFrame)
 					break;
@@ -104,7 +105,7 @@ void Detection::windowDetect(cv::Mat src,double max_dimension) {
 
 }
 
-vector<Point2f> Detection::radarDetection(Mat src) {
+void Detection::radarDetection(Mat src) {
 	// Radar Detection	
 	std::vector<cv::Mat> channels_rad;
 	cv::split(src, channels_rad);
@@ -119,7 +120,7 @@ vector<Point2f> Detection::radarDetection(Mat src) {
 	findContours(radar_mask, contours, hierarchy_rad, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
 	std::vector<float> radius_detection(contours.size());
-	std::vector<Point2f> location(contours.size());
+	std::vector<Point2d> location(contours.size());
 	double range, angle;
 
 	for (int i = 0; i < contours.size(); i++)
@@ -127,14 +128,16 @@ vector<Point2f> Detection::radarDetection(Mat src) {
 		minEnclosingCircle((Mat)contours[i], location[i], radius_detection[i]);
 		range = sqrt(pow(double(radarCenter.x - location[i].x), 2) + pow(double(radarCenter.y - location[i].y), 2)) / radarRadius * radarRange;
 		angle = tan(double(radarCenter.x - location[i].x) / double(radarCenter.y - location[i].y)) * 180 / 3.14;
-		location[i].x = range;
-		location[i].y = angle;
+		info.radarRange.push_back(range);
+		info.radarAngle.push_back(range);
+		//location[i].x = range;
+		//location[i].y = angle;
 	}
 
-	return location;
+	//return location;
 }
 
-vector<Rect> Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, vector<Rect> GT, int GT_offset, int stopFrame)
+void Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, vector<Rect> GT, int GT_offset, int stopFrame)
 {
 	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true)
 
@@ -178,28 +181,34 @@ vector<Rect> Detection::saliencyDetection(Mat src, double max_dimension, double 
 	vector<Vec4i> hierarchy;
 	cv::findContours(mask_trh, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-	vector<vector<Point> > contours_poly(contours.size()); //Remove
+	//vector<vector<Point> > contours_poly(contours.size()); //Remove
 	vector<Rect> boundRect(contours.size());
 
 	for (int i = 0; i < contours.size(); i++)
 	{
-		approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
-		boundRect[i] = boundingRect(Mat(contours_poly[i]));
+		//approxPolyDP(Mat(contours[i]), contours_poly[i], 3, true);
+		boundRect[i] = boundingRect(Mat(contours[i]));
 	}
 
 	//Resize bounding rectangles to compare
+	//vector<double> detectionAngles;
+
 	for (int i = 0; i < boundRect.size(); i++) {
 		boundRect[i].x = boundRect[i].x*(float)(src.cols / (float)(max_dimension*src.cols / maxD));
 		boundRect[i].width = boundRect[i].width*(float)(src.cols / (float)(max_dimension*src.cols / maxD));
 		boundRect[i].y = boundRect[i].y*(float)(src.rows / (float)(max_dimension*src.rows / maxD));
 		boundRect[i].height = boundRect[i].height*(float)(src.rows / (float)(max_dimension*src.rows / maxD));
+	
+		//detectionAngles.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
+		info.cameraAngle.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
+
 	}
 	duration = static_cast<double>(cv::getTickCount()) - duration;
 	duration /= cv::getTickFrequency();
 
 	cout << duration << endl;
 	// Draw bonding rects 
-	Mat drawing = Mat::zeros(mask_trh.size(), CV_8UC3);
+	/*Mat drawing = Mat::zeros(mask_trh.size(), CV_8UC3);
 	RNG rng(0xFFFFFFFF);
 	Scalar color = Scalar(0, 200, 50);
 
@@ -210,12 +219,13 @@ vector<Rect> Detection::saliencyDetection(Mat src, double max_dimension, double 
 	}
 
 	imshow("Src", drawWindow);
-	waitKey(1);
+	waitKey(1);*/
 	
+	//Compute angle
+	
+	//info.cameraAngle = detectionAngles;
 
-	//End timing
-
-	return boundRect;
+	//return detectionAngles;
 	//Ground truth
 	//color = Scalar(0, 0, 200);
 	//rectangle(src_cr, GT[GTcount].tl(), GT[GTcount].br(), color);

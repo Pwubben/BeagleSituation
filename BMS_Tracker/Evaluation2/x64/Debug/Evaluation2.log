@@ -1,3 +1,59 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Evaluation2.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  DataAss.cpp
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C2143: syntax error: missing ';' before '<'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C2238: unexpected token(s) preceding ';'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C2143: syntax error: missing ';' before '<'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C2238: unexpected token(s) preceding ';'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(12): error C2653: 'DataAss': is not a class or namespace name
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(14): error C2039: 'radarIdx': is not a member of 'detection'
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(8): note: see declaration of 'detection'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(14): error C2228: left of '.size' must have class/struct/union
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(15): error C2039: 'radarIdx': is not a member of 'detection'
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(8): note: see declaration of 'detection'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(15): error C2228: left of '.x' must have class/struct/union
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(20): error C2065: 'tracks_': undeclared identifier
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(20): error C2228: left of '.size' must have class/struct/union
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(20): note: type is 'unknown-type'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(21): error C2065: 'tracks_': undeclared identifier
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(21): error C2228: left of '.size' must have class/struct/union
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(21): note: type is 'unknown-type'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(22): error C2065: 'tracks_': undeclared identifier
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\dataass.cpp(22): error C2228: left of '.getPrediction' must have class/struct/union
+  Main.cpp
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C2143: syntax error: missing ';' before '<'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C2238: unexpected token(s) preceding ';'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C2143: syntax error: missing ';' before '<'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C2238: unexpected token(s) preceding ';'
   Detection.cpp
-  Evaluation2.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\BMS_Tracker\x64\Debug\Evaluation.exe
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C2143: syntax error: missing ';' before '<'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(9): error C2238: unexpected token(s) preceding ';'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C2143: syntax error: missing ';' before '<'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\tracker.h(10): error C2238: unexpected token(s) preceding ';'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(45): error C2079: 'info' uses undefined struct 'Detection::run::d'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(48): error C2228: left of '.radarIdx' must have class/struct/union
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(48): note: type is 'int'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(50): error C2228: left of '.cameraIdx' must have class/struct/union
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(50): note: type is 'int'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(51): error C2065: 'data_ass_': undeclared identifier
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(51): error C2228: left of '.run' must have class/struct/union
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(51): note: type is 'unknown-type'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(52): error C2146: syntax error: missing ';' before identifier 'count'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(125): error C2664: 'void cv::minEnclosingCircle(cv::InputArray,cv::Point2f &,float &)': cannot convert argument 2 from 'cv::Point2d' to 'cv::Point2f &'
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(132): error C2440: 'return': cannot convert from 'std::vector<cv::Point2d,std::allocator<_Ty>>' to 'std::vector<cv::Point2f,std::allocator<_Ty>>'
+          with
+          [
+              _Ty=cv::Point2d
+          ]
+          and
+          [
+              _Ty=cv::Point2f
+          ]
+  c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\detection.cpp(132): note: No constructor could take the source type, or constructor overload resolution was ambiguous
+  BMS.cpp
+  Generating Code...
