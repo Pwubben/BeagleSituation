@@ -1,9 +1,11 @@
 #ifndef TRACKER_H
 #define TRACKER_H
-
+#define _USE_MATH_DEFINES
 #include "BMS.h"
 #include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
 #include <vector>
+#include <math.h>
 
 struct detection {
 	vector<double> radarRange;
@@ -28,8 +30,6 @@ public:
 	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, std::vector<cv::Rect> GT, int GT_offset, int stopFrame);
 	std::vector<std::vector<int>> readGroundTruth(std::string fileName);
 	std::string getFileString(std::string fileName);
-
-	
 
 protected:
 	DataAss data_ass_;
@@ -76,52 +76,87 @@ public:
 	};
 
 	void run(struct detection info);
-	//{
-	//	struct b blabla;
-	//	for (Track tr : tracks_) {
-	//		b = tr.GetPrediction();
-	//		... // do something with b
-	//	}
-	//	//Compare detections with predictions
-	//	//Assign nearest neighbor
-	//	struct a assigned_detection = ...
-
-	//	//If detections occur which cannot be matched
-	//	//initiate new track
-	//	Track tracki();
-	//	tracks_.push_back(tracki);
-	//	
-	//	//If track has not been updated for some time
-	//	//Terminate track
-	//	track_[i].remove();
-	//	
-	//	//Run tracking algorithm		
-	//	for (Track tr : tracks_) {
-	//		tr.run(assigned_detection);
-	//		tr.change_a(); // error
-	//	}
-	//}
+	
 protected:
 	std::vector<Track> tracks_;
 	double angleMatchThres = 5.0;
+	double detectionMatchThres = 100;
 };
 
 class Track {
 public:
-	Track() {
-		a = 0;
-		b = b_;
+	Track(double range, double angle) {
+		range_ = range;
+		angle_ = angle;
+		body2nav();
+
+		dt = 1 / 15; //15 FPS
+		//Initial velocity estimates [m/s]
+		vx_ = 10;
+		vy_ = 10;
+		omega = 0;
+		Q << 10, 0,
+			0, 5;
+		R << 100, 0,
+			0, 100;
+		Kalman KF(dt, x_, y_, vx_, vy_);
 	};
-	void run(a a_d) {
-		//Do tracking stuff
-	}
+
+	void run();
 	struct prediction getPrediction(); // based on protected values
 	double getDetection();
+	void setDetection(double range, double angle);
+	cv::Point body2nav();
+
+	int detectionAbsence = 0;
 protected:
+	//Last detections
+	double range_;
+	double angle_;
+
+	double heading;
+
+	//Navigation frame detections
+	cv::Point navDet;
+
+	//Prediction
+	prediction prediction_;
+
 	//States
-	int a;
-	int b;
-	void change_a();
+	double dt;
+	double x_;
+	double y_;
+	double vx_;
+	double vy_;
+	double omega_;
+};
+
+class Kalman {
+public:
+	Kalman(const float dt , const float& x, const float& y, const float& vx, const float& vy );
+	
+	void gainUpdate(const float& beta);
+	void gainUpdate();
+	cv::Point2f predict();
+	Eigen::Vector4f update(Eigen::Vector2f& selected_detections);
+
+private:
+	Eigen::Matrix4f A; //Evolution state matrix
+	Eigen::Matrix2f Q; //Covariance Matrix associated to the evolution process
+	Eigen::MatrixXf G; //Evolution Noise Matrix
+	Eigen::Matrix4f P; //Covariance Matrix
+	Eigen::MatrixXf C;
+	Eigen::Matrix2f R; //Proces measurement Covariance matrix
+	Eigen::Matrix2f S;
+	Eigen::MatrixXf K; //Gain
+	Eigen::Matrix4f P_predict; //Covariance Matrix predicted error
+	Eigen::Vector4f x_predict;
+	Eigen::Vector4f x_filter;
+	Eigen::Vector2f z_predict;
+	cv::Point2f last_prediction;
+	Eigen::Vector2f last_prediction_eigen;
+	cv::Point2f last_velocity;
+	bool init;
 };
 
 #endif
