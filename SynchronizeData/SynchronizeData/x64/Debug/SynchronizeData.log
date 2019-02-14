@@ -1,5 +1,6 @@
 ﻿  trim.cpp
-c:\users\pimwu\source\repos\synchronizedata\synchronizedata\trim.cpp(23): warning C4101: 'eq': unreferenced local variable
-c:\users\pimwu\source\repos\synchronizedata\synchronizedata\trim.cpp(57): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-c:\users\pimwu\source\repos\synchronizedata\synchronizedata\trim.cpp(58): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-  SynchronizeData.vcxproj -> c:\users\pimwu\source\repos\SynchronizeData\x64\Debug\SynchronizeData.exe
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(23): warning C4101: 'eq': unreferenced local variable
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(57): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(58): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(164): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  SynchronizeData.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\SynchronizeData\x64\Debug\SynchronizeData.exe

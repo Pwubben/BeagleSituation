@@ -3,8 +3,8 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varSpeed, double varYaw)
-	: _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel)
+EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXd xInit)
+	: _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel), x(xInit)
 {
 	I = Eigen::MatrixXd::Identity(n, n);
 	
@@ -20,32 +20,48 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 	R << pow(varGPS, 2), 0.0, 0.0, 0.0, 0.0,
 		0.0, pow(varGPS, 2), 0.0, 0.0, 0.0,
 		0.0, 0.0, 0.0, pow(varYaw, 2), 0.0,
-		0.0, 0.0, pow(varSpeed, 2), 0.0, 0.0;
+		0.0, 0.0, 0.0, 0.0, pow(varYawRate, 2);
+
+	dt = 1 / 15;
+	init = true;
 }
 
-void EKF::compute(Eigen::Vector2f z, double dt) {
-	/********************
-	- Prediction step
-	*********************/
-	//Update process covariance
-	updateQ(dt);
-	//Update state and Jacobian
-	updateJA(dt);
-	//Prediction
-	predict();
-
-	/********************
-	- Update step
-	*********************/
-	//Jacobian Beagle
-	Eigen::MatrixXd JH(4, 5);
-	JH <<	1.0, 0.0, 0.0, 0.0, 0.0,
+void EKF::compute(Eigen::Vector2f z) {
+	if (init) {
+		if (z.size() == 4) {
+			//Beagle initiation
+			x(0) = z(0);
+			x(1) = z(1);
+			x(2) = z(2);
+			x(4) = z(3);
+		}
+		init = false;
+	}
+	else {
+		
+		/********************
+		- Update step
+		*********************/
+		//Jacobian Beagle
+		Eigen::MatrixXd JH(4, 5);
+		JH << 1.0, 0.0, 0.0, 0.0, 0.0,
 			0.0, 1.0, 0.0, 0.0, 0.0,
 			0.0, 0.0, 1.0, 0.0, 0.0,
 			0.0, 0.0, 0.0, 0.0, 1.0;
 
-	//Update parameters
-	update(z, x, JH, R);
+		//Update parameters
+		update(z, x, JH, R);
+
+		/********************
+		- Prediction step
+		*********************/
+		//Update process covariance
+		updateQ(dt);
+		//Update state and Jacobian
+		updateJA(dt);
+		//Prediction
+		predict();
+	}
 }
 
 void EKF::updateQ(double dt) {
@@ -116,4 +132,10 @@ void EKF::update(const Eigen::VectorXd& Z, const Eigen::VectorXd& Hx, const Eige
 	x = x + K * (Z - Hx);
 	// Update the error covariance
 	P = (I - K * JH) * P;
+}
+
+beaglePrediction EKF::getBeaglePrediction() {
+	beaglePrediction prediction;
+	prediction.position << x(0), x(1);
+	prediction.heading = x(2);
 }

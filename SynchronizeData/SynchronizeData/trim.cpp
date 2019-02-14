@@ -94,7 +94,7 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	video.release();
 }
 
-void IMUData(std::string s, std::vector<double> & ROTvec_ret, std::vector<double> & HDTvec_ret) {
+void IMUData(std::string s, std::string d) {
 
 	std::ifstream input(s);
 	std::string line;
@@ -102,6 +102,8 @@ void IMUData(std::string s, std::vector<double> & ROTvec_ret, std::vector<double
 
 	std::vector<double> ROTvec;
 	std::vector<double> HDTvec;
+	std::vector<double> lonvec;
+	std::vector<double> latvec;
 	std::string::size_type sz;
 
 	while (std::getline(input, line, '\n')) {
@@ -118,26 +120,71 @@ void IMUData(std::string s, std::vector<double> & ROTvec_ret, std::vector<double
 			}
 			if (substr == "$HEROT") {
 				getline(lineparse, substr, ',');
-				number = std::stod(substr, &sz);
+				number = std::stof(substr, &sz);
 				ROTvec.push_back(number);
+				//std::cout << "ROT entry: " << number << std::endl;
+			}
+			if (substr == "$GPGLL") {
+				getline(lineparse, substr, ',');
+				number = std::stof(substr, &sz);
+				lonvec.push_back(number);
+				getline(lineparse, substr, ',');
+				if (substr == "S") {
+					lonvec.back() *= -1;
+					getline(lineparse, substr, ',');
+					number = std::stof(substr, &sz);
+					latvec.push_back(number);
+					getline(lineparse, substr, ',');
+					if (substr == "W") {
+						latvec.back() *= -1;
+					}
+				}
+				if (substr == "N") {
+					getline(lineparse, substr, ',');
+					number = std::stof(substr, &sz);
+					latvec.push_back(number);
+					getline(lineparse, substr, ',');
+					if (substr == "W") {
+						latvec.back() *= -1;
+					}
+				}
 				//std::cout << "ROT entry: " << number << std::endl;
 			}
 		}
 	}
 
+	//float staticLat = float(-latvec[0]);
+
 	int unPause = 0;
-	while (ROTvec[unPause] == 0)
+	while (latvec[unPause] == latvec[0])
 	{
 		unPause++;
 	}
-	unPause += 22;
+
+	int pause = latvec.size()-1;
+	while (latvec[pause] == latvec[latvec.size()-1]) {
+		pause--;
+	}
+	//unPause += 22;
 
 	std::vector<double>::const_iterator first = ROTvec.begin() + unPause;
-	std::vector<double>::const_iterator last = ROTvec.end();
+	std::vector<double>::const_iterator last = ROTvec.end() - (ROTvec.size() - pause);
 	std::vector<double> ROTvec_ret1(first, last);
 	first = HDTvec.begin() + unPause;
-	last = HDTvec.end();
+	last = HDTvec.end()- ( HDTvec.size() - pause);
 	std::vector<double> HDTvec_ret1(first, last);
-	ROTvec_ret = ROTvec_ret1;
-	HDTvec_ret = HDTvec_ret1;
+	first = latvec.begin() + unPause;
+	last = latvec.end() -( latvec.size() - pause);
+	std::vector<double> latvec_ret1(first, last);
+	first = lonvec.begin() + unPause;
+	last = lonvec.end()- ( lonvec.size() - pause);
+	std::vector<double> lonvec_ret1(first, last);
+	
+	std::ofstream myfile(d, std::ofstream::out | std::ofstream::trunc);
+
+	for (int i = 0; i < ROTvec_ret1.size(); i++) {
+		myfile << latvec_ret1[i] << "," << lonvec_ret1[i] << "," << HDTvec_ret1[i] << "," << ROTvec_ret1[i] << std::endl;
+	}
+	myfile.close();
+
 }

@@ -61,7 +61,7 @@ void DataAss::run(detection info) {
 			//Match if sufficiently near - 
 			//TODO - Write Gating algorithm
 			if (polarDist[idxDetection] < detectionMatchThres) {
-				tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection], beagleHeading, beagleLocation);
+				tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection], beagleHeading, beagleLocation); //TODO - heading location from beaglemeas
 				unassignedDetection.erase(unassignedDetection.begin() + idxDetection); //Check if correct one is erased
 
 				//Reset detection count
@@ -98,18 +98,25 @@ void DataAss::run(detection info) {
 	}
 
 	//TODO Beagle KF - Obtain Beagle updates 
+	BeagleTrack.compute(_beagleMeas);
+	_beaglePrediction = BeagleTrack.getBeaglePrediction();
 
 	//Run each track for new predictions
 	for (int i = 0; i < tracks_.size(); i++) {
-		tracks_[i].run();
+		tracks_[i].run(_beaglePrediction);
 	}
 }
 
-void DataAss::setBeagleData(beagleData beagleData_) {
-
+void DataAss::setBeagleData(Eigen::Vector4d& beagleData_) {
 	//Set initial Beagle position as reference point - if first
+	if (beagleInit) {
+		xyInit << earthRadius* deg2Rad(beagleData_(1)) * cos(beagleData_(0)), earthRadius* deg2Rad(beagleData_(0));
+		_beagleMeas << 0.0, 0.0, beagleData_(2), beagleData_(3);
+	}
 
 	//Compute position of Beagle relative to first Beagle position
+	//Lat-lon data is close to 0 - 0, so no subtraction of initial position necessary
+	_beagleMeas << earthRadius* deg2Rad(beagleData_(1)) * cos(beagleData_(0))-xyInit(0), earthRadius* deg2Rad(beagleData_(0)) - xyInit(1), beagleData_(2), beagleData_(3);
 }
 
 vector<double> distance(vector<double> cdet, double rdet) {

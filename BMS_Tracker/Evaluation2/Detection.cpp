@@ -20,7 +20,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	}
 	
 	//Load Beagle Data
-	vector<beagleData> beagleData_ = loadBeagleData(getFileString(beagleFile));
+	std::vector<Eigen::Vector4d> beagleData_ = loadBeagleData(getFileString(beagleFile));
 
 	int count = 0;
 
@@ -266,25 +266,26 @@ std::string Detection::getFileString(std::string fileName) {
 	return file;
 }
 
-vector<beagleData> Detection::loadBeagleData(std::string beagleFile) {
-	vector<beagleData> beagleData_;
+std::vector<Eigen::Vector4d> Detection::loadBeagleData(std::string beagleFile) {
+	vector<Eigen::Vector4d> beagleData_;
 	ifstream file(beagleFile);
 	string line;
 	while (getline(file, line))
 	{
 		beagleData_.push_back(beagleData());
-		vector<int> row;
+		//vector<int> row;
+		Eigen::Vector4d row;
+		int i = 0;
 		stringstream iss(line);
 		string val;
 
 		// while getline gives correct result
 		while (getline(iss, val, ','))
 		{
-			row.push_back(stoi(val));
+			row <<  stof(val);
 		}
-		beagleData_.back().heading = row[0];
-		beagleData_.back().turnRate = row[1];
-		beagleData_.back().location << row[2], row[3];
+		
+		beagleData_.push_back(row);
 	}
 	return beagleData_;
 }

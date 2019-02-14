@@ -26,24 +26,27 @@ struct prediction {
 
 struct beaglePrediction {
 	Eigen::Vector2f position;
-	double heading;
+	float heading;
 };
 
+struct EKFParams {
+	double maxAcc, maxTurnRate, maxYawAcc, varGPS, varYaw, varYawRate;
+};
 
 class Detection {
 public:
 	Detection() {	
-		DataAss data_ass_();
+		data_ass_();
 	};
 	
 	void run(std::string File, std::string groundTruthFile, std::string beagleFile, int GT_offset, int stopFrame);
 	void windowDetect(cv::Mat src,double max_dimension);
 	void radarDetection(cv::Mat src);
 	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, std::vector<cv::Rect> GT, int GT_offset, int stopFrame);
-	std::vector<beagleData> loadBeagleData(std::string beagleFile);
+
 	std::vector<std::vector<int>> readGroundTruth(std::string fileName);
 	std::string getFileString(std::string fileName);
-
+	std::vector<Eigen::Vector4d> loadBeagleData(std::string beagleFile);
 
 protected:
 	DataAss data_ass_;
@@ -62,6 +65,7 @@ protected:
 
 	double radarRange = 1000;
 	double FOV = 100;
+
 	//Capture information
 	cv::Rect seaWindow;
 	cv::Rect radarWindow;
@@ -87,17 +91,31 @@ class DataAss {
 public:
 	DataAss() {
 		std::vector<Track> tracks_();
+
 		//Kalman filter Beagle
-		Kalman BeagleTrack();
+		Eigen::VectorXd xInit;
+		xInit << 0.0, 0.0, 0.0, 14.0, 0.0; // Initiate velocity as it is not measured
+		EKFParams params({1,400,1,0.05,0.05,0.05});
+
+		//Initiate EKF for Beagle
+		BeagleTrack(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw,params.varYawRate, xInit);
+		beagleInit = true;
 	};
 
 	void run(struct detection info);
 	
-	void setBeagleData(beagleData beagleData_); //TODO setBeagleData - Write when files are known
-	static struct beaglePrediction getBeaglePrediction(); //TODO getBeaglePrediction 
-	
+	void setBeagleData(Eigen::Vector4d& beagleData_); 
+
 protected:
-	static Kalman BeagleTrack; //TODO BeagleTrack add class with Beagle Tracker
+	EKF BeagleTrack; 
+	beaglePrediction _beaglePrediction;
+	Eigen::Vector4d _beagleMeas; 
+	bool beagleInit;
+
+	Eigen::Vector2d xyInit;
+	const double earthRadius = 6378137; // Meters
+	double aspectRatio;
+
 	std::vector<Track> tracks_;
 	double angleMatchThres = 5.0;
 	double detectionMatchThres = 100;
@@ -124,20 +142,18 @@ public:
 		//omega = 0;
 		
 		//Kalman filter track
-		Kalman KF(dt, x_, y_, vx_, vy_);
+		KF(dt, x_, y_, vx_, vy_);
 
 		
 	};
 
-	void run();
+	void run(beaglePrediction _beaglePrediction);
 	struct prediction getPrediction(); // based on protected values
 	double getDetection();
 	void setDetection(double range, double angle, double heading, Eigen::Vector2f beagleLocation);
 
-	//TODO
-	void setBeagleData(beagleData beagleData_); //Write when files are known
 	void body2nav(double range, double angle, double heading, Eigen::Vector2f beagleLocation);
-	Eigen::Vector2f nav2body();
+	Eigen::Vector2f nav2body(beaglePrediction _beaglePrediction);
 
 	int detectionAbsence = 0;
 
@@ -160,6 +176,8 @@ protected:
 	//Prediction
 	Eigen::Vector2f prediction_coord;
 	prediction prediction_;
+
+	
 
 };
 
@@ -196,16 +214,20 @@ private:
 class EKF {
 public:
 	EKF() {};
-	EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varSpeed, double varYaw);
+	//Beagle Constructor
+	EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXd xInit);
 	void compute(Eigen::Vector2f detection,double dt);
+	void compute(Eigen::Vector2f detection);
 	void updateQ(double dt);
 	void updateJA(double dt);
 	void predict();
 	void update(const Eigen::VectorXd& Z, const Eigen::VectorXd& Hx, const Eigen::MatrixXd &JH, const Eigen::MatrixXd &R);
-	
+	struct beaglePrediction getBeaglePrediction(); //TODO getBeaglePrediction 
+
 private:
+	bool init;
 	const int n = 5; // Number of states
-	double dt;
+	double dt; //Sample time
 
 	double sGPS;
 	double sCourse;
@@ -227,4 +249,14 @@ private:
 	Eigen::MatrixXd K; // Kalman Gain
 	Eigen::VectorXd x; // State - x y heading velocity yaw_rat long_acceleration
 };
+
+double deg2Rad(const double degrees)
+{
+	return (degrees/ 100 / 180.0) * M_PI; //GPGLL Data needs division by 100 to obtain degrees
+}
+
+double rad2Deg(const double degrees)
+{
+	return (degrees / M_PI) * 180.0;
+}
 #endif

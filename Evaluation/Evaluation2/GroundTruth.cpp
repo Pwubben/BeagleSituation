@@ -25,7 +25,7 @@ void DataGeneration(std::string videoFile, std::string groundTruthFile, std::str
 	// Declare VideoCapture object for storing video
 	cv::VideoCapture capture(getFileString(videoFile));
 
-	//Output parameters of lgorithms
+	//Output parameters of algorithms
 	vector<vector<Rect>> boundRectSaliency, boundRectGMM;
 	double avg_timeSaliency = 0.0, avg_timeGMM = 0.0;
 
