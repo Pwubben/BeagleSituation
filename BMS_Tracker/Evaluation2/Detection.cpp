@@ -8,7 +8,7 @@ using namespace std;
 
 
 
-void Detection::run(std::string File, std::string groundTruthFile,int GT_offset, int stopFrame) {
+void Detection::run(std::string File, std::string groundTruthFile, std::string beagleFile, int GT_offset, int stopFrame) {
 	cout << File << endl;
 	//Load ground truth data
 	std::vector<Rect> GT;
@@ -18,6 +18,9 @@ void Detection::run(std::string File, std::string groundTruthFile,int GT_offset,
 		Rect coord(GroundTruth[s][0], GroundTruth[s][1], GroundTruth[s][2], GroundTruth[s][3]);
 		GT.push_back(coord);
 	}
+	
+	//Load Beagle Data
+	vector<beagleData> beagleData_ = loadBeagleData(getFileString(beagleFile));
 
 	int count = 0;
 
@@ -51,7 +54,9 @@ void Detection::run(std::string File, std::string groundTruthFile,int GT_offset,
 				//Camera detector
 				saliencyDetection(src, max_dimension, sample_step, threshold, GT, GT_offset, stopFrame);
 				
-				data_ass_.run(info)
+				data_ass_.setBeagleData(beagleData_[count]);
+
+				data_ass_.run(info);
 				count++;
 				if (count == stopFrame)
 					break;
@@ -120,14 +125,14 @@ void Detection::radarDetection(Mat src) {
 	findContours(radar_mask, contours, hierarchy_rad, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
 	std::vector<float> radius_detection(contours.size());
-	std::vector<Point2d> location(contours.size());
+	std::vector<Point2f> location(contours.size());
 	double range, angle;
 
 	for (int i = 0; i < contours.size(); i++)
 	{
 		minEnclosingCircle((Mat)contours[i], location[i], radius_detection[i]);
 		range = sqrt(pow(double(radarCenter.x - location[i].x), 2) + pow(double(radarCenter.y - location[i].y), 2)) / radarRadius * radarRange;
-		angle = tan(double(radarCenter.x - location[i].x) / double(radarCenter.y - location[i].y)) * 180 / 3.14;
+		angle = tan(double(radarCenter.x - location[i].x) / double(radarCenter.y - location[i].y)) * 180 / M_PI;
 		info.radarRange.push_back(range);
 		info.radarAngle.push_back(range);
 		//location[i].x = range;
@@ -259,4 +264,27 @@ std::string Detection::getFileString(std::string fileName) {
 	ss << path << fileName;
 	std::string file = ss.str();
 	return file;
+}
+
+vector<beagleData> Detection::loadBeagleData(std::string beagleFile) {
+	vector<beagleData> beagleData_;
+	ifstream file(beagleFile);
+	string line;
+	while (getline(file, line))
+	{
+		beagleData_.push_back(beagleData());
+		vector<int> row;
+		stringstream iss(line);
+		string val;
+
+		// while getline gives correct result
+		while (getline(iss, val, ','))
+		{
+			row.push_back(stoi(val));
+		}
+		beagleData_.back().heading = row[0];
+		beagleData_.back().turnRate = row[1];
+		beagleData_.back().location << row[2], row[3];
+	}
+	return beagleData_;
 }

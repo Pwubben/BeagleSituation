@@ -8,6 +8,8 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/imgproc.hpp"
 #include <ctime>
+#include <cmath>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <omp.h>
@@ -31,7 +33,7 @@ void RadarScreenDetect(cv::Mat src, cv::Rect& radar_scr, cv::Rect& sea_scr) {
 	// circle outline
 	//circle(src, center, radius, cv::Scalar(0, 0, 255), 3, 8, 0);
 	
-	radar_scr = cv::Rect(center.x - radius, center.y - radius, 2 * radius, 2 * radius);
+	radar_scr = cv::Rect(center.x - radius, std::max(0,center.y - radius), 2 * radius, 2 * radius);
 	sea_scr = cv::Rect(10, center.y + radius+70, src.cols-10, src.rows-center.y-radius-70);
 	//cv::imshow("Hough", src(radar_scr));
 

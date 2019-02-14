@@ -44,5 +44,11 @@
     <ClCompile Include="DataAss.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Track.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Kalman.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

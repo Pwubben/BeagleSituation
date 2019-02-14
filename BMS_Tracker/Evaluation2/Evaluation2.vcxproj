@@ -103,7 +103,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include;C:\Users\pimwu\Documents\opencv-3.4.0\build\install\include;C:\Users\pimwu\source\repos\fftw-3.3.5-dll64</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include;C:\Users\pimwu\Documents\opencv-3.4.0\build\install\include;C:\Users\pimwu\source\repos\fftw-3.3.5-dll64;C:\Users\pimwu\Downloads\eigen-eigen-323c052e1731</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -158,6 +158,7 @@
   <ItemGroup>
     <ClCompile Include="BMS.cpp" />
     <ClCompile Include="Detection.cpp" />
+    <ClCompile Include="Kalman.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="DataAss.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -166,6 +167,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Track.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

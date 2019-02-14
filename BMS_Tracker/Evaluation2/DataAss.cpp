@@ -11,6 +11,7 @@ struct matchedDetections {
 	vector<double> relAngle;
 }detect;
 
+
 void DataAss::run(detection info) {
 	
 	//Retrieve predictions and detections from last step
@@ -35,7 +36,8 @@ void DataAss::run(detection info) {
 		vector<double> d = distance(info.cameraAngle, info.radarAngle[newRangeDetection[i]]);
 		int idxMatch = min_element(d.begin(), d.end()) - d.begin();
 
-		//Match if sufficiently near - Write Gating algorithm
+		//Match if sufficiently near - 
+		//TODO - Write Gating algorithm
 		if (d[idxMatch] < angleMatchThres) {
 			detect.relAngle.push_back(info.cameraAngle[idxMatch]);
 		}
@@ -56,9 +58,10 @@ void DataAss::run(detection info) {
 		if (!detect.relRange.empty()) {
 			vector<double> polarDist = distancePL(detect, predictionVector[i]);
 			int idxDetection = min_element(polarDist.begin(), polarDist.end()) - polarDist.begin();
-			//Match if sufficiently near - Write Gating algorithm
+			//Match if sufficiently near - 
+			//TODO - Write Gating algorithm
 			if (polarDist[idxDetection] < detectionMatchThres) {
-				tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection]);
+				tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection], beagleHeading, beagleLocation);
 				unassignedDetection.erase(unassignedDetection.begin() + idxDetection); //Check if correct one is erased
 
 				//Reset detection count
@@ -72,15 +75,18 @@ void DataAss::run(detection info) {
 			int idxMatch = min_element(d.begin(), d.end()) - d.begin();
 			//Match if sufficiently near
 			if (d[idxMatch] < angleMatchThres) {
-				tracks_[i].setDetection(0, info.cameraAngle[idxMatch]);
+				//Range prediction is returned as detection - Could be improved if done within tracker
+				tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[idxMatch], beagleHeading, beagleLocation);
 				matchFlag = true;
 			}
 		}
-		//Assign zero's if no match is found
+		//Return prediction as measurement if no match is found
 		if (!matchFlag) {
-			tracks_[i].setDetection(0, 0);
-			tracks_[i].detectionAbsence++;
+			
+			tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, beagleHeading, beagleLocation);
+			tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
 		}
+
 		//Terminate track if no detection has been received for too long
 		if (tracks_[i].detectionAbsence > 30)
 			tracks_.erase(tracks_.begin() + i); //Check if correct one is erased
@@ -91,9 +97,19 @@ void DataAss::run(detection info) {
 		tracks_.push_back(Track(detect.relRange[unassignedDetection[i]], detect.relAngle[unassignedDetection[i]]));
 	}
 
+	//TODO Beagle KF - Obtain Beagle updates 
+
+	//Run each track for new predictions
 	for (int i = 0; i < tracks_.size(); i++) {
 		tracks_[i].run();
 	}
+}
+
+void DataAss::setBeagleData(beagleData beagleData_) {
+
+	//Set initial Beagle position as reference point - if first
+
+	//Compute position of Beagle relative to first Beagle position
 }
 
 vector<double> distance(vector<double> cdet, double rdet) {
@@ -132,3 +148,5 @@ std::pair<bool, int > findInVector(const std::vector<double>  & vecOfElements, c
 
 	return result;
 }
+
+
