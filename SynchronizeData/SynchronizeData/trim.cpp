@@ -10,10 +10,10 @@ void unPause(cv::VideoCapture src, int& begin) {
 	cv::Mat tSrc, frame1,compFrame;
 	src >> tSrc;
 	src >> tSrc;
-	int  frameCount = 0;
+	int  frameCount = 2;
 
 	//Define rectangle on right side of screen
-	cv::Rect testScr = cv::Rect(tSrc.cols - 80, tSrc.rows - 80, 40, 40);
+	cv::Rect testScr = cv::Rect(tSrc.cols - 50, tSrc.rows - 50, 40, 40);
 	cv::cvtColor(tSrc, tSrc, CV_BGR2GRAY);
 	frame1 = tSrc.clone();
 	frame1 = frame1(testScr);
@@ -22,9 +22,10 @@ void unPause(cv::VideoCapture src, int& begin) {
 	//std::cout << isEqual << std::endl;
 	bool eq;
 	
-	while ((cv::sum(frame1 != compFrame) == cv::Scalar(0, 0, 0))) {
+	while ((cv::sum(frame1 != compFrame).val[0] < cv::Scalar(5).val[0])) {
+		//cv::Scalar(0, 0, 0)
 		//eq = cv::countNonZero(compFrame != frame1) == 0;
-		
+		std::cout << (cv::sum(frame1 != compFrame)) << std::endl;
 		/*cv::imshow("Frame", compFrame);
 		cv::imshow("Frame1", frame1);*/
 		
@@ -46,7 +47,8 @@ void unPause(cv::VideoCapture src, int& begin) {
 	begin = frameCount;
 }
 
-void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::string name, int correction) {
+
+void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::string name, int correction=0) {
 	cv::Mat tSrc;
 	src >> tSrc;
 	
@@ -55,9 +57,9 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	cv::VideoWriter video(name, CV_FOURCC('M', 'J', 'P', 'G'), 15, tSrc.size(), true);
 
 	int startFrame = FPS*begin+correction;
-	int endFrame = FPS*end - startFrame;
-	endFrame = 1290;
-
+	int endFrame = end- startFrame;
+	endFrame = 1660;
+	//endFrame = round(endFrame);
 	// Cycle trough frames until video is unpaused
 	for (int i = 0; i < unPauseFrame; i++) {
 		src >> tSrc;
@@ -68,9 +70,16 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 		src >> tSrc;
 	}
 
-	std::cout << "Start frame reached, starting write" << std::endl;
+	std:: cout << "Start frame reached, starting write" << std::endl;
 
 	for (int i = 0; i < endFrame; i++) {
+	/*	if (count == 0) {
+			for (int j = 0; j < 1650; j++) {
+				src >> tSrc;
+				count++;
+			}
+		}*/
+
 		src >> tSrc;
 
 		if (tSrc.empty())
@@ -80,6 +89,9 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 		}
 		video.write(tSrc);
 		count++;
+		/*cv::imshow("frame", tSrc);
+		std::cout << count << std::endl;
+		cv::waitKey(0);*/
 		if (count == endFrame / 4) {
 			std::cout << "25% done" << std::endl;
 		}
@@ -94,7 +106,7 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	video.release();
 }
 
-void IMUData(std::string s, std::string d) {
+double IMUData(std::string s, std::string d) {
 
 	std::ifstream input(s);
 	std::string line;
@@ -186,5 +198,6 @@ void IMUData(std::string s, std::string d) {
 		myfile << latvec_ret1[i] << "," << lonvec_ret1[i] << "," << HDTvec_ret1[i] << "," << ROTvec_ret1[i] << std::endl;
 	}
 	myfile.close();
-
+	double vidSize = lonvec_ret1.size();
+	return vidSize;
 }

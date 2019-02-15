@@ -3,14 +3,13 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-Kalman::Kalman(const float dt, const float& x, const float& y, const float& vx, const float& vy) {
+Kalman::Kalman(const Eigen::Vector2f& navDet, const float& vx, const float& vy) {
 	
 	//TRANSITION MATRIX
 	A << 1, dt, 0, 0,
 		 0, 1, 0, 0,
 		 0, 0, 1, dt,
 	   	 0, 0, 0, 1;
-
 
 	//NOISE EVOLUTION
 	G = Eigen::MatrixXf(4, 2);
@@ -38,19 +37,19 @@ Kalman::Kalman(const float dt, const float& x, const float& y, const float& vx, 
 	//GAIN     
 	K = Eigen::MatrixXf(4, 2);
 	
-	last_prediction = cv::Point2f(x, y);
-	last_velocity = cv::Point2f(vx, vy);
+	last_prediction = navDet;
+	last_velocity << vx, vy;
 	init = true;
 }
 
-Kalman::Kalman(const float dt, const float& x, const float& y, const float& vx, const float& vy, const float& omega, const float& omegad) {
-
-}
+//Kalman::Kalman(const float dt, const float& x, const float& y, const float& vx, const float& vy, const float& omega, const float& omegad) {
+//
+//}
 
 
 void Kalman::predict() {
 	if (init) {
-		x_predict << last_prediction.x, last_velocity.x,last_prediction.y, last_velocity.y;
+		x_predict << last_prediction, last_velocity;
 		init = false;
 	}
 	else {
@@ -63,7 +62,7 @@ void Kalman::predict() {
 		//Predicted measurements
 		z_predict = C*x_predict;
 
-		last_prediction = cv::Point2f(z_predict(0), z_predict(1));
+		last_prediction << z_predict(0), z_predict(1);
 	}
 }
 

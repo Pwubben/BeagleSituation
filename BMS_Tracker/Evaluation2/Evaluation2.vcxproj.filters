@@ -50,5 +50,8 @@
     <ClCompile Include="Kalman.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EKF.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

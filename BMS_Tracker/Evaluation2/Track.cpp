@@ -3,20 +3,20 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
+
+
 void Track::run(beaglePrediction _beaglePrediction) {
 	//Target processing
 
 	//KF gain update
-	KF.gainUpdate();
+	KF->gainUpdate();
 	//Track update
-	KF.update(navDet);
+	KF->update(navDet);
 	//Track prediction
-	KF.predict();
+	KF->predict();
 
 	//Compute detection prediction by combining estimates from Beagle and Track
 	nav2body(_beaglePrediction);
-
-	//DataAss::BeagleTrack->getBeaglePrediction();
 
 }
 
@@ -28,31 +28,29 @@ double Track::getDetection() {
 	return range_;
 }
 
-void Track::setDetection(double range, double angle, double heading, Eigen::Vector2f beagleLocation) {
+void Track::setDetection(double range, double angle, Eigen::Vector3f beagleMeas) {
 	range_ = range;
 	angle_ = angle;
 
 	//Compute detection in navigation frame coordinates
-	body2nav(range, angle,heading, beagleLocation); //TODO Body2Nav - Perhaps we need predictions later instead of measurements
+	body2nav(range, angle, beagleMeas); //TODO Body2Nav - Perhaps we need predictions later instead of measurements
 }
 
-void Track::body2nav(double range, double angle, double heading, Eigen::Vector2f beagleLocation) {
-	relDet << sin(angle / 180 * M_PI)*range, cos(angle / 180 * M_PI)*range;
+void Track::body2nav(double range, double angle, Eigen::Vector3f& beagleMeas) {
+	relDet << sin(angle / 180.0 * M_PI)*range, cos(angle / 180.0 * M_PI)*range;
 
-	rotMat << cos(heading), -sin(heading),
-			  sin(heading),  cos(heading);
+	rotMat << cos(beagleMeas(2)), -sin(beagleMeas(2)),
+			  sin(beagleMeas(2)),  cos(beagleMeas(2));
 	
 	//Compute detection in navigation frame coordinates
-	navDet = rotMat*relDet + beagleLocation;
+	navDet = rotMat*relDet + beagleMeas.head(2);
 
 }
 
-Eigen::Vector2f Track::nav2body(beaglePrediction _beaglePrediction) {
-	//Obtain prediction from Beagle KF
-	//beaglePrediction beaglePrediction_ = DataAss::getBeaglePrediction();
+void Track::nav2body(beaglePrediction _beaglePrediction) {
 
 	//x y prediction target relative to beagle position prediction
-	Eigen::Vector2f pdTarget = KF.getPrediction() - _beaglePrediction.position;
+	Eigen::Vector2f pdTarget = KF->getPrediction() - _beaglePrediction.position;
 
 	//Rotate to body frame using beagle heading prediction
 	rotMat << cos(_beaglePrediction.heading), sin(_beaglePrediction.heading),
@@ -64,4 +62,6 @@ Eigen::Vector2f Track::nav2body(beaglePrediction _beaglePrediction) {
 	//Compute range and angle
 	prediction_.range = sqrt(pow(prediction_coord[0], 2) + pow(prediction_coord[1], 2));
 	prediction_.angle = atan2(prediction_coord[0], prediction_coord[1])/M_PI*180;
+
+	
 }
