@@ -1,19 +1,21 @@
 #include "stdafx.h"
 #include "Tracker.h"
+#include <algorithm>
+#include <cmath>
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
 EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXf xInit)
-	: _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel), x(xInit)
+	: dt(1/float(15)), init(true), _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel), x(xInit)
 {
 	I = Eigen::MatrixXf::Identity(n, n);
 	
 	P = Eigen::MatrixXf(n, n);
-	P << 100.0, 0.0, 0.0, 0.0, 0.0, 
-		0.0, 100.0, 0.0, 0.0, 0.0, 
-		0.0, 0.0, 1000.0, 0.0, 0.0, 
-		0.0, 0.0, 0.0, 1000.0, 0.0,
-		0.0, 0.0, 0.0, 0.0, 1000.0;
+	P << 10.0, 0.0, 0.0, 0.0, 0.0, 
+		0.0, 10.0, 0.0, 0.0, 0.0, 
+		0.0, 0.0, 10.0, 0.0, 0.0, 
+		0.0, 0.0, 0.0, 15.0, 0.0,
+		0.0, 0.0, 0.0, 0.0, 10.0;
 		
 
 	R = Eigen::MatrixXf(4, 4); //4 sources of measurement for Beagle
@@ -22,8 +24,6 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 		0.0, 0.0, pow(varYaw, 2), 0.0,
 		0.0, 0.0, 0.0, pow(varYawRate, 2);
 
-	dt = 1 / 15;
-	init = true;
 }
 
 void EKF::compute(Eigen::VectorXf z) {
@@ -39,7 +39,7 @@ void EKF::compute(Eigen::VectorXf z) {
 	}
 	else {
 		
-		std::cout << "z: \n" << z << std::endl;
+		//std::cout << "z: \n" << z << std::endl;
 		/********************
 		- Update step
 		*********************/
@@ -79,8 +79,6 @@ void EKF::updateQ(double dt) {
 		0.0, 0.0, pow(sCourse, 2), 0.0, 0.0,
 		0.0, 0.0, 0.0, pow(sVelocity, 2), 0.0,
 		0.0, 0.0, 0.0, 0.0, pow(sYaw, 2);
-
-
 }
 
 void EKF::updateJA(double dt) {
@@ -92,31 +90,41 @@ void EKF::updateJA(double dt) {
 	x(3) = v
 	x(4) = yaw rate
 	****************/
-	//std::cout << x << std::endl;
+	//std::cout <<"x:\n"<< x << std::endl;
 	// Updating state equations
+	//std::cout << "dt: " << dt << std::endl;
 	if (fabs(x(4)) < 0.01) {
-		x(0) = x(0) + (x(3) * dt) * cos(x(2));
-		x(1) = x(1) + (x(3) * dt) * sin(x(2));
-		x(2) = x(2);
+		x(0) = x(0) + (x(3) * dt) * sin(x(2));
+		x(1) = x(1) + (x(3) * dt) * cos(x(2));
+		x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
 		x(3) = x(3);
-		x(4) = 0.0000001;
+		x(4) = Util::sgn(x(4))*std::max(double(abs(x(4))),0.0001);
 	}
 	else {
-		x(0) = x(0) + (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2)));
-		x(1) = x(1) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
+		x(0) = x(0) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
+		x(1) = x(1) + (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2)));
 		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
-		x(3) = x(3) + x(5) * dt;
+		x(3) = x(3);
 		x(4) = x(4);
 	}
-	std::cout <<"x: \n"<< x << std::endl;
+
+	//std::cout <<"x state update: \n"<< x << std::endl;
 	int n = x.size();
 	JA = Eigen::MatrixXf(n, n);
-
-	JA <<	1.0, 0.0, (x(3) / x(4)) * (cos(x(4) * dt + x(2)) - cos(x(2))), (1 / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (x(3) / pow(x(4), 2)) * (-sin(x(4) * dt + x(2)) + x(4)*dt* cos(x(4)*dt + x(2)) + sin(x(2))),
-			0.0, 1.0, (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (1 / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2))), (x(3) / pow(x(4), 2)) * (cos(x(4) * dt + x(2)) + x(4)*dt* sin(x(4)*dt + x(2)) - cos(x(2))),
+	if (fabs(x(4)) < 0.01) {
+		JA << 1.0, 0.0, x(3)*dt*cos(x(2)), dt*sin(x(2)), 0,
+			0.0, 1.0, -x(3)*dt*sin(x(2)), dt*cos(x(2)), 0,
+			0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 1.0;
+	}
+	else {
+		JA << 1.0, 0.0, (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (1.0 / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2))), (x(3) / pow(x(4), 2)) * (-cos(x(4) * dt + x(2)) - x(4)*dt* sin(x(4)*dt + x(2)) + cos(x(2))),
+			0.0, 1.0, (x(3) / x(4)) * (cos(x(4) * dt + x(2)) - cos(x(2))), (1.0 / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (x(3) / pow(x(4), 2)) * (-sin(x(4) * dt + x(2)) + x(4)*dt* cos(x(4)*dt + x(2)) + sin(x(2))),
 			0.0, 0.0, 1.0, 0.0, dt,
 			0.0, 0.0, 0.0, 1.0, 0.0,
 			0.0, 0.0, 0.0, 0.0, 1.0;
+	}
 }
 
 void EKF::predict() {
@@ -133,7 +141,12 @@ void EKF::update(const Eigen::VectorXf& Z, const Eigen::VectorXf& Hx, const Eige
 
 	// Update estimate
 	x = x + K * (Z - Hx);
-
+	//std::cout << "Z: \n" <<Z << std::endl;
+	//std::cout << "x_update: \n" << x << std::endl;
+	//std::cout << "z: \n" << Z << std::endl;
+	//std::cout << "JA: \n" << JA << std::endl;
+	//std::cout << "K:\n" << K << std::endl;
+	//std::cout << "R:\n" << R << std::endl;
 	// Update the error covariance
 	P = (I - K * JH) * P;
 }

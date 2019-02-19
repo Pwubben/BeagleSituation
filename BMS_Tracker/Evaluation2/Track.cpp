@@ -3,21 +3,17 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-
-
 void Track::run(beaglePrediction _beaglePrediction) {
 	//Target processing
-
+	//Track prediction
+	KF->predict();
 	//KF gain update
 	KF->gainUpdate();
 	//Track update
 	KF->update(navDet);
-	//Track prediction
-	KF->predict();
 
 	//Compute detection prediction by combining estimates from Beagle and Track
 	nav2body(_beaglePrediction);
-
 }
 
 prediction Track::getPrediction() {
@@ -29,11 +25,17 @@ double Track::getDetection() {
 }
 
 void Track::setDetection(double range, double angle, Eigen::Vector3f beagleMeas) {
-	range_ = range;
-	angle_ = angle;
+	if (detectionAbsence == 0) {
+		range_ = range;
+		angle_ = angle;
+	}
 
 	//Compute detection in navigation frame coordinates
 	body2nav(range, angle, beagleMeas); //TODO Body2Nav - Perhaps we need predictions later instead of measurements
+
+	x_measVec.push_back(std::min(navDet(0), float(3000.0)));
+	y_measVec.push_back(std::min(navDet(1), float(3000.0)));
+
 }
 
 void Track::body2nav(double range, double angle, Eigen::Vector3f& beagleMeas) {
@@ -61,7 +63,7 @@ void Track::nav2body(beaglePrediction _beaglePrediction) {
 
 	//Compute range and angle
 	prediction_.range = sqrt(pow(prediction_coord[0], 2) + pow(prediction_coord[1], 2));
-	prediction_.angle = atan2(prediction_coord[0], prediction_coord[1])/M_PI*180;
+	prediction_.angle = atan2(prediction_coord[0], prediction_coord[1])/M_PI*180.0;
 
 	
 }

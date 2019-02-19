@@ -222,7 +222,7 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 	duration = static_cast<double>(cv::getTickCount()) - duration;
 	duration /= cv::getTickFrequency();
 
-	cout << duration << endl;
+	//cout << duration << endl;
 	// Draw bonding rects 
 	/*Mat drawing = Mat::zeros(mask_trh.size(), CV_8UC3);
 	RNG rng(0xFFFFFFFF);
@@ -299,4 +299,8 @@ std::vector<Eigen::Vector4f> Detection::loadBeagleData(std::string beagleFile) {
 		beagleData_.push_back(row);
 	}
 	return beagleData_;
+}
+
+void drawResults() {
+
 }

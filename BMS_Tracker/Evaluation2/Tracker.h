@@ -43,12 +43,16 @@ class Util {
 public:
 	static double deg2Rad(const double& degrees)
 	{
-		return ((degrees / 18000.0) * M_PI); //GPGLL Data needs division by 100 to obtain degrees
+		return ((degrees / float(180.0)) * M_PI); //GPGLL Data needs division by 100 to obtain degrees
 	}
 
 	static double rad2Deg(const double& degrees)
 	{
 		return ((degrees / M_PI) * 180.0);
+	}
+
+	static int sgn(double val) {
+		return (0.0 < val) - (val < 0.0);
 	}
 };
 
@@ -65,7 +69,7 @@ public:
 	Eigen::Vector2f getPrediction();
 
 private:
-	const double dt = 1 / 15; //15 FPS
+	const double dt = 1 / float(15); //15 FPS
 
 	Eigen::Matrix4f A; //Evolution state matrix
 	Eigen::Matrix2f Q; //Covariance Matrix associated to the evolution process
@@ -127,18 +131,21 @@ private:
 
 class Track {
 public:
-	Track(double range, double angle, Eigen::Vector3f beagleMeas) {
+	Track(double range, double angle, Eigen::Vector3f beagleMeas) : detectionAbsence(0) {
 		range_ = range;
 		angle_ = angle;
 
 		body2nav(range, angle, beagleMeas);
 
+		x_measVec.push_back(std::min(navDet(0), float(3000.0)));
+		y_measVec.push_back(std::min(navDet(1), float(3000.0)));
+
 		//Target processing
 		//Initial velocity estimates [m/s]
 
 		//omega = 0;
-		vxInit = 10.0;
-		vyInit = 10.0;
+		vxInit = 0.0;
+		vyInit = 0.0;
 
 		//Kalman filter track
 		KF = std::make_unique<Kalman>(navDet, vxInit, vyInit);
@@ -152,7 +159,7 @@ public:
 	void body2nav(double range, double angle, Eigen::Vector3f& beagleMeas);
 	void nav2body(beaglePrediction _beaglePrediction);
 
-	int detectionAbsence = 0;
+	int detectionAbsence;
 
 protected:
 	std::unique_ptr<Kalman> KF;
@@ -166,7 +173,10 @@ protected:
 	double angle_;
 
 	double heading;
-
+	std::vector<double> x_measVec;
+	std::vector<double> y_measVec;
+	std::vector<double> x_predictVec;
+	std::vector<double> y_predictVec;
 
 	//Navigation frame detections
 	Eigen::Matrix2f rotMat;
@@ -180,11 +190,11 @@ protected:
 
 class DataAss {
 public:
-	DataAss::DataAss() : tracks_(){
+	DataAss::DataAss() : tracks_(), absenceThreshold(120) {
 		//Kalman filter Beagle
 		Eigen::VectorXf xInit(5);
 		xInit << 0.0, 0.0, 0.0, 14.0, 0.0; // Initiate velocity as it is not measured
-		EKFParams params = { 1,400,1,0.05,0.05,0.05 };
+		EKFParams params = { 0.1,200,1,0.05,0.05,0.05 };
 
 		//Initiate EKF for Beagle
 		BeagleTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
@@ -200,6 +210,8 @@ public:
 	std::vector<double> distancePL(matchedDetections detection, prediction prdct);
 	std::vector<double> distanceDet(std::vector<double> cdet, double rdet);
 
+	void drawResults();
+
 protected:
 	std::unique_ptr<EKF> BeagleTrack;
 	beaglePrediction _beaglePrediction;
@@ -212,8 +224,8 @@ protected:
 
 	std::vector<Track> tracks_;
 	double angleMatchThres = 5.0;
-	double detectionMatchThres = 100;
-	double absenceThreshold = 75;
+	double detectionMatchThres = 10000;
+	double absenceThreshold;
 	matchedDetections detect;
 
 	Eigen::Vector2f beagleLocation;
