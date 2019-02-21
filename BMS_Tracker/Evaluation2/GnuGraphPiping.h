@@ -155,7 +155,7 @@ namespace gnugraph
          unsigned long dwCreationFlags = DETACHED_PROCESS;
 
          // Create the child process. 
-         if (!CreateProcess(gnuplot_exe.c_str(),
+         if (!CreateProcessW(L"C:/Program Files/gnuplot/bin/gnuplot.exe",
             nullptr,						// command line 
             nullptr,						// process security attributes 
             nullptr,						// primary thread security attributes 

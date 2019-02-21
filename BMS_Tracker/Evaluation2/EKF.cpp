@@ -1,11 +1,11 @@
-#include "stdafx.h"
+
 #include "Tracker.h"
 #include <algorithm>
 #include <cmath>
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXf xInit)
+EKF::EKF(float max_acceleration, float max_turn_rate, float max_yaw_accel, float varGPS, float varYaw, float varYawRate, Eigen::VectorXf xInit)
 	: dt(1/float(15)), init(true), _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel), x(xInit)
 {
 	I = Eigen::MatrixXf::Identity(n, n);
@@ -67,7 +67,7 @@ void EKF::compute(Eigen::VectorXf z) {
 	}
 }
 
-void EKF::updateQ(double dt) {
+void EKF::updateQ(float dt) {
 	Q = Eigen::MatrixXf(n, n);
 	sGPS = 0.5 * _max_acceleration * pow(dt, 2);
 	sVelocity = _max_acceleration * dt;
@@ -81,7 +81,7 @@ void EKF::updateQ(double dt) {
 		0.0, 0.0, 0.0, 0.0, pow(sYaw, 2);
 }
 
-void EKF::updateJA(double dt) {
+void EKF::updateJA(float dt) {
 	//Update state
 	/***************
 	x(0) = x
@@ -98,7 +98,7 @@ void EKF::updateJA(double dt) {
 		x(1) = x(1) + (x(3) * dt) * cos(x(2));
 		x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
 		x(3) = x(3);
-		x(4) = Util::sgn(x(4))*std::max(double(abs(x(4))),0.0001);
+		x(4) = Util::sgn(x(4))*std::max(float(abs(x(4))),float(0.0001));
 	}
 	else {
 		x(0) = x(0) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
@@ -141,6 +141,12 @@ void EKF::update(const Eigen::VectorXf& Z, const Eigen::VectorXf& Hx, const Eige
 
 	// Update estimate
 	x = x + K * (Z - Hx);
+
+	x_predictVec.push_back(x(0));
+	y_predictVec.push_back(x(1));
+	x_measVec.push_back(Z(0));
+	y_measVec.push_back(Z(1));
+
 	//std::cout << "Z: \n" <<Z << std::endl;
 	//std::cout << "x_update: \n" << x << std::endl;
 	//std::cout << "z: \n" << Z << std::endl;
@@ -151,9 +157,18 @@ void EKF::update(const Eigen::VectorXf& Z, const Eigen::VectorXf& Hx, const Eige
 	P = (I - K * JH) * P;
 }
 
-beaglePrediction EKF::getBeaglePrediction() {
-	beaglePrediction prediction;
-	prediction.position << x(0), x(1);
-	prediction.heading = x(2);
+Eigen::Vector3f EKF::getBeaglePrediction() {
+	Eigen::Vector3f prediction;
+	//beaglePrediction prediction;
+	prediction << x(0), x(1), x(2);
 	return prediction;
+}
+
+std::vector<std::vector<float>> EKF::getPlotVectors() {
+	std::vector<std::vector<float>> plotVectors;
+	plotVectors.push_back(x_measVec);
+	plotVectors.push_back(y_measVec);
+	plotVectors.push_back(x_predictVec);
+	plotVectors.push_back(y_predictVec);
+	return plotVectors;
 }

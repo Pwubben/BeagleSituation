@@ -23,7 +23,7 @@
 
 struct GnuGraph : public gnugraph::GnuGraphFormatter, public gnugraph::GnuGraphPiping
 {
-   GnuGraph(const std::string& gnuplot_exe_path = "C:/Program Files/gnuplot/bin/gnuplot.exe") : gnugraph::GnuGraphPiping(gnuplot_exe_path) {}
+   GnuGraph(const std::string& gnuplot_exe_path = "C:/Program Files/gnuplot/bin/gnuplot.exe") : gnugraph::GnuGraphPiping(gnuplot_exe_path), initialized(false) {}
 
    void lineType(const std::string& line_type) { this->line_type = line_type; }
 
@@ -33,10 +33,16 @@ struct GnuGraph : public gnugraph::GnuGraphFormatter, public gnugraph::GnuGraphP
    //   write("clear\n");
    //}
 
-   std::string plot()
+   void plot()
    {
       setup2D();
-      return writeRead();
+
+	 
+	  //fprintf(pipe, setup.c_str());
+	  //fflush(pipe);
+	 // data.clear();
+	  data_vectors.clear();
+	  std::string output =  writeRead();
    }
 
    std::string plot3D()
@@ -207,9 +213,9 @@ private:
    std::vector<std::string> data;
    std::vector<std::string> data_vectors; // data for drawing vectors
    std::vector<std::string> titles;
-
+   FILE* pipe;
    bool mode_2D = true;
-   bool initialized = false;
+   bool initialized;
 
    void setup2D()
    {
@@ -220,30 +226,55 @@ private:
          write("clear\n");
       }
 
-      if (!initialized)
-      {
-         //setup += "set term windows\n"; // gnuplot command
-         std::string title;
-         if (titles.size() > 0)
-            title = titles.front();
+	  if (!initialized)
+	  {
+		  pipe = _popen("C:/Users/pimwu/Documents/Afstuderen/bin/gnuplot.exe", "w");
+		  initialized = true;
+	  }
+		  //setup += "set term windows\n"; // gnuplot command
+		  std::string title;
+		  if (titles.size() > 0)
+			  title = titles.front();
 
-         setup += "plot '-' ";	// "-" for realtime plotting
-         setup += "using 1:2 ";
-         setup += "title '" + title + "' ";
-         setup += "with " + line_type;
+		  //setup += "set xrange[-200:400]\n";
+		  //setup += " set yrange[-200:950]\n";
+			 
+		  setup += "set term win\n ";
+		  setup += "plot '-' ";	// "-" for realtime plotting
+		  setup += "using 1:2 ";
+		  setup += "title '" + title + "' ";
+		  setup += "with " + line_type;
 
-         for (size_t i = 1; i < data.size(); ++i)
-         {
-            if (titles.size() == data.size())
-               title = titles[i];
-            setup += ", '-' using 1:2 title '" + title + "' with " + line_type;
-         }
+		  for (size_t i = 1; i < data.size(); ++i)
+		  {
+			  if (titles.size() == data.size())
+				  title = titles[i];
+			  setup += ", '-' using 1:2 title '" + title + "' with " + line_type;
+		  }
 
-         setup += "\n";
-         initialized = true;
-      }
-      else
-         setup = "replot\n";
+		  setup += "\n";
+		  
+		  //std::string input{};
+
+		  if (data.size() > 1 || data_vectors.size() > 0)
+		  {
+			  for (const auto& i : data)
+				  setup += i + "e\n";
+
+			  for (const auto& i : data_vectors)
+				  setup += i + "e\n";
+			 
+		  }
+		  setup += "set term win\n";
+		  setup += "replot\n";
+	  //}
+	  //else {
+
+		 // 
+		 
+		 // //setup += "set term win\n";
+	  //}
+	  
    }
 
    void setup3D()
@@ -262,7 +293,7 @@ private:
          if (titles.size() > 0)
             title = titles.front();
 
-         setup += "splot '-' ";	// "-" for realtime plotting
+         setup += "plot '-' ";	// "-" for realtime plotting
          setup += "using 1:2:3 ";
          setup += "title '" + title + "' ";
          setup += "with " + line_type;
@@ -294,11 +325,11 @@ private:
 
       if (data.size() > 1 || data_vectors.size() > 0)
       {
-         for (const auto& i : data)
+       /*  for (const auto& i : data)
             input += i + "e\n";
 
          for (const auto& i : data_vectors)
-            input += i + "e\n";
+            input += i + "e\n";*/
 
          write(setup + input);
       }

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+
 #include "Tracker.h"
 #include "BMS.h"
 #include "opencv2/opencv.hpp"
@@ -25,9 +25,9 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	int count = 0;
 
 	//Performance parameters
-	double max_dimension = 800;
-	double sample_step = 25;
-	double threshold = 5;
+	float max_dimension = 800;
+	float sample_step = 25;
+	float threshold = 5;
 
 	bool check(false);
 	try {
@@ -41,6 +41,13 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 			windowDetect(src,max_dimension); //radarScreenDetect()
 
 			while (1) {
+				double duration = static_cast<double>(cv::getTickCount());
+				if (count == 0) {
+					for (int i = 0; i < 110; i++) {
+						capture >> src;
+						count++;
+					}
+				}
 				capture >> src;
 				if (src.empty())
 					break;
@@ -58,6 +65,10 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 				data_ass_->run(info);
 				count++;
+				duration = static_cast<double>(cv::getTickCount()) - duration;
+				duration /= cv::getTickFrequency();
+				std::cout << duration << std::endl;
+
 				/*if (count == stopFrame)
 					break;*/
 			}
@@ -74,7 +85,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 }
 
-void Detection::windowDetect(cv::Mat src,double max_dimension) {
+void Detection::windowDetect(cv::Mat src, float max_dimension) {
 	cv::Mat src_gray;
 	cv::cvtColor(src, src_gray, CV_BGR2GRAY);
 	GaussianBlur(src_gray, src_gray, cv::Size(9, 9), 2, 2);
@@ -123,14 +134,17 @@ void Detection::radarDetection(Mat src) {
 
 	std::vector<float> radius_detection(contours.size());
 	std::vector<Point2f> location(contours.size());
-	double range, angle;
+	float range, angle;
 	int eraseIdx = -1;
 	for (int i = 0; i < contours.size(); i++)
 	{
 		minEnclosingCircle((Mat)contours[i], location[i], radius_detection[i]);
 		for (int i = 0; i < location.size(); i++) {
 			if ((abs(location[i].x - radarCenter.x) < 2) && (abs(location[i].y - radarCenter.y) < 2)) {
-				radarCenter = cv::Point(location[i].x, location[i].y);
+				if (!centerInit) {
+					radarCenter = cv::Point(location[i].x, location[i].y);
+					centerInit = true;
+				}
 				eraseIdx = i;
 			}
 		}
@@ -141,9 +155,9 @@ void Detection::radarDetection(Mat src) {
 
 	for (int i = 0; i < location.size(); i++)
 	{
-		range = sqrt(pow(double(radarCenter.x - location[i].x), 2) + pow(double(radarCenter.y - location[i].y), 2)) / radarRadius * radarRange;
-		angle = atan2(double(radarCenter.x - location[i].x) , double(radarCenter.y - location[i].y)) * 180.0 / M_PI;
-		info.radarRange.push_back(range);
+		range = sqrt(pow(float(radarCenter.x - location[i].x), 2) + pow(float(radarCenter.y - location[i].y), 2)) / radarRadius * radarRange;
+		angle = atan2(float(radarCenter.x - location[i].x) , float(radarCenter.y - location[i].y)) * 180.0 / M_PI;
+		info.radarRange.push_back(Util::round(range));
 		info.radarAngle.push_back(angle);
 		//location[i].x = range;
 		//location[i].y = angle;
@@ -152,7 +166,7 @@ void Detection::radarDetection(Mat src) {
 	//return location;
 }
 
-void Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, vector<Rect> GT)
+void Detection::saliencyDetection(Mat src, float max_dimension, float sample_step, float threshold, vector<Rect> GT)
 {
 	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true)
 
@@ -168,7 +182,7 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 
 	// Computing saliency 
 	BMS bms(src_small, dilation_width_1, use_normalize, handle_border, colorSpace, whitening);
-	bms.computeSaliency((double)sample_step);
+	bms.computeSaliency((float)sample_step);
 
 	sResult = bms.getSaliencyMap();
 
@@ -216,7 +230,7 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 		boundRect[i].height = boundRect[i].height*(float)(src.rows / (float)(max_dimension*src.rows / maxD));
 	
 		//detectionAngles.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
-		info.cameraAngle.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
+		info.cameraAngle.push_back(float((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
 
 	}
 	duration = static_cast<double>(cv::getTickCount()) - duration;

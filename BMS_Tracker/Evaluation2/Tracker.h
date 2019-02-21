@@ -2,6 +2,9 @@
 #define TRACKER_H
 #define _USE_MATH_DEFINES
 #include "BMS.h"
+#include <iostream>
+#include <algorithm>
+//#include "GnuGraph.h"
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 #include <memory>
@@ -9,20 +12,20 @@
 #include <math.h>
 
 struct detection {
-	std::vector<double> radarRange;
-	std::vector<double> radarAngle;
-	std::vector<double> cameraAngle;
+	std::vector<float> radarRange;
+	std::vector<float> radarAngle;
+	std::vector<float> cameraAngle;
 };
 
 struct beagleData {
-	double heading;
-	double turnRate;
+	float heading;
+	float turnRate;
 	Eigen::Matrix2f location;
 };
 
 struct prediction {
-	double range;
-	double angle;
+	float range;
+	float angle;
 };
 
 struct beaglePrediction {
@@ -31,29 +34,40 @@ struct beaglePrediction {
 };
 
 struct EKFParams {
-	double maxAcc, maxTurnRate, maxYawAcc, varGPS, varYaw, varYawRate;
+	float maxAcc, maxTurnRate, maxYawAcc, varGPS, varYaw, varYawRate;
 };
 
 struct matchedDetections {
-	std::vector<double> relRange;
-	std::vector<double> relAngle;
+	std::vector<float> relRange;
+	std::vector<float> relAngle;
 };
 
 class Util {
 public:
-	static double deg2Rad(const double& degrees)
+	static float deg2Rad(const float& degrees)
 	{
 		return ((degrees / float(180.0)) * M_PI); //GPGLL Data needs division by 100 to obtain degrees
 	}
 
-	static double rad2Deg(const double& degrees)
+	static float rad2Deg(const float& degrees)
 	{
 		return ((degrees / M_PI) * 180.0);
 	}
 
-	static int sgn(double val) {
+	static int sgn(float val) {
 		return (0.0 < val) - (val < 0.0);
 	}
+
+	static float round(float var)
+	{
+		// 37.66666 * 100 =3766.66 
+		// 3766.66 + .5 =37.6716    for rounding off value 
+		// then type cast to int so value is 3766 
+		// then divided by 100 so the value converted into 37.66 
+		float value = (int)(var * 100 + .5);
+		return (float)value / 100;
+	}
+
 };
 
 
@@ -69,7 +83,7 @@ public:
 	Eigen::Vector2f getPrediction();
 
 private:
-	const double dt = 1 / float(15); //15 FPS
+	const float dt = 1 / float(15); //15 FPS
 
 	Eigen::Matrix4f A; //Evolution state matrix
 	Eigen::Matrix2f Q; //Covariance Matrix associated to the evolution process
@@ -93,30 +107,37 @@ class EKF {
 public:
 	EKF() {};
 	//Beagle Constructor
-	EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXf xInit);
-	void compute(Eigen::Vector2f detection, double dt);
+	EKF(float max_acceleration, float max_turn_rate, float max_yaw_accel, float varGPS, float varYaw, float varYawRate, Eigen::VectorXf xInit);
+	void compute(Eigen::Vector2f detection, float dt);
 	void compute(Eigen::VectorXf detection);
-	void updateQ(double dt);
-	void updateJA(double dt);
+	void updateQ(float dt);
+	void updateJA(float dt);
 	void predict();
 	void update(const Eigen::VectorXf& Z, const Eigen::VectorXf& Hx, const Eigen::MatrixXf &JH, const Eigen::MatrixXf &R);
-	struct beaglePrediction getBeaglePrediction(); //TODO getBeaglePrediction 
+	Eigen::Vector3f getBeaglePrediction(); //TODO getBeaglePrediction 
+	std::vector<std::vector<float>> getPlotVectors();
 
 private:
 	bool init;
 	const int n = 5; // Number of states
-	double dt; //Sample time
+	float dt; //Sample time
 
-	double sGPS;
-	double sCourse;
-	double sVelocity;
-	double sYaw;
-	double sAccel;
+	float sGPS;
+	float sCourse;
+	float sVelocity;
+	float sYaw;
+	float sAccel;
 
-	double _max_turn_rate;
-	double _max_acceleration;
-	double _max_yaw_accel;
+	float _max_turn_rate;
+	float _max_acceleration;
+	float _max_yaw_accel;
 
+	//Plot vectors 
+	std::vector<float> x_measVec;
+	std::vector<float> y_measVec;
+	std::vector<float> x_predictVec;
+	std::vector<float> y_predictVec;
+	
 	Eigen::MatrixXf P; // initial covaraince/uncertainity in states
 	Eigen::MatrixXf Q; // process noise covariance
 	Eigen::MatrixXf JH; // measurment jacobian
@@ -131,7 +152,7 @@ private:
 
 class Track {
 public:
-	Track(double range, double angle, Eigen::Vector3f beagleMeas) : detectionAbsence(0) {
+	Track(float range, float angle, Eigen::Vector3f beagleMeas) : detectionAbsence(0) {
 		range_ = range;
 		angle_ = angle;
 
@@ -144,23 +165,27 @@ public:
 		//Initial velocity estimates [m/s]
 
 		//omega = 0;
-		vxInit = 0.0;
-		vyInit = 0.0;
+
+		float vInit = 6;
+		float headingInit = atan2(beagleMeas(0) - navDet(0), beagleMeas(1) - navDet(1));
+		vxInit = sin(headingInit)*vInit;
+		vyInit = cos(headingInit)*vInit;
 
 		//Kalman filter track
 		KF = std::make_unique<Kalman>(navDet, vxInit, vyInit);
 	};
 
-	void run(beaglePrediction _beaglePrediction);
+	void run(Eigen::Vector3f _beaglePrediction, int matchFlag);
 	struct prediction getPrediction(); // based on protected values
-	double getDetection();
-	void setDetection(double range, double angle, Eigen::Vector3f beagleMeas);
+	float getDetection();
+	void setDetection(const float& range, const float& angle, Eigen::Vector3f beagleMeas);
 
-	void body2nav(double range, double angle, Eigen::Vector3f& beagleMeas);
-	void nav2body(beaglePrediction _beaglePrediction);
+	void body2nav(float range, float angle, Eigen::Vector3f& beagleMeas);
+	void nav2body(Eigen::Vector3f _beaglePrediction);
 
 	int detectionAbsence;
 
+	std::vector<std::vector<float>> getPlotVectors();
 protected:
 	std::unique_ptr<Kalman> KF;
 
@@ -169,14 +194,15 @@ protected:
 	float vyInit;
 
 	//Last detections
-	double range_;
-	double angle_;
+	float range_;
+	float angle_;
+	float heading;
+	int matchFlag_;
 
-	double heading;
-	std::vector<double> x_measVec;
-	std::vector<double> y_measVec;
-	std::vector<double> x_predictVec;
-	std::vector<double> y_predictVec;
+	std::vector<float> x_measVec;
+	std::vector<float> y_measVec;
+	std::vector<float> x_predictVec;
+	std::vector<float> y_predictVec;
 
 	//Navigation frame detections
 	Eigen::Matrix2f rotMat;
@@ -190,11 +216,11 @@ protected:
 
 class DataAss {
 public:
-	DataAss::DataAss() : tracks_(), absenceThreshold(120) {
+	DataAss::DataAss() : tracks_(), absenceThreshold(100) {
 		//Kalman filter Beagle
 		Eigen::VectorXf xInit(5);
 		xInit << 0.0, 0.0, 0.0, 14.0, 0.0; // Initiate velocity as it is not measured
-		EKFParams params = { 0.1,200,1,0.05,0.05,0.05 };
+		EKFParams params = { 0.1,200.0,1,0.05,0.05,0.05 };
 
 		//Initiate EKF for Beagle
 		BeagleTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
@@ -203,33 +229,35 @@ public:
 	~DataAss() {
 		
 	};
-	void run(struct detection info);
+	void run(const struct detection& info);
 
 	void setBeagleData(Eigen::Vector4f& beagleData_);
-	std::pair<bool, int > findInVector(const std::vector<double>& vecOfElements, const double& element);
-	std::vector<double> distancePL(matchedDetections detection, prediction prdct);
-	std::vector<double> distanceDet(std::vector<double> cdet, double rdet);
+	std::pair<bool, int > findInVector(const std::vector<float>& vecOfElements, const float& element);
+	std::vector<float> distancePL(matchedDetections detection, prediction prdct);
+	std::vector<float> distanceDet(std::vector<float> cdet, float rdet);
 
 	void drawResults();
 
 protected:
+	int count = 0;
+	
 	std::unique_ptr<EKF> BeagleTrack;
-	beaglePrediction _beaglePrediction;
+	Eigen::Vector3f _beaglePrediction;
 	Eigen::Vector4f _beagleMeas;
 	bool beagleInit;
 
 	Eigen::Vector2f xyInit; //Initial position of Beagle
-	const double earthRadius = 6378137; // Meters
-	double aspectRatio;
+	const float earthRadius = 6378137; // Meters
+	float aspectRatio;
 
 	std::vector<Track> tracks_;
-	double angleMatchThres = 5.0;
-	double detectionMatchThres = 10000;
-	double absenceThreshold;
+	float angleMatchThres = 5.0;
+	float detectionMatchThres = 10000;
+	float absenceThreshold;
 	matchedDetections detect;
 
 	Eigen::Vector2f beagleLocation;
-	double beagleHeading;
+	float beagleHeading;
 };
 
 class Detection {
@@ -239,15 +267,16 @@ public:
 	};
 	
 	void run(std::string File, std::string groundTruthFile, std::string beagleFile);
-	void windowDetect(cv::Mat src,double max_dimension);
+	void windowDetect(cv::Mat src, float max_dimension);
 	void radarDetection(cv::Mat src);
-	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, std::vector<cv::Rect> GT);
+	void saliencyDetection(cv::Mat src, float max_dimension, float sample_step, float threshold, std::vector<cv::Rect> GT);
 
 	std::vector<std::vector<int>> readGroundTruth(std::string fileName);
 	std::string getFileString(std::string fileName);
 	std::vector<Eigen::Vector4f> loadBeagleData(std::string beagleFile);
 
 protected:
+	bool centerInit = false;
 	std::unique_ptr<DataAss> data_ass_;
 	void getInput();
 
@@ -262,8 +291,8 @@ protected:
 	int colorSpace = 1;
 	bool whitening = 0;
 
-	double radarRange = 926;
-	double FOV = 60;
+	float radarRange = 926;
+	float FOV = 60;
 
 	//Capture information
 	cv::Rect seaWindow;
@@ -276,7 +305,7 @@ protected:
 	cv::Size resizeDim;
 
 	//Algorithm variables
-	double thr;
+	float thr;
 	cv::Mat mask_trh;
 	cv::Mat masked_img;
 	cv::Mat sResult;
