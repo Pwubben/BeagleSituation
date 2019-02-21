@@ -5,7 +5,8 @@
 void Track::run(Eigen::Vector3f _beaglePrediction, int matchFlag) {
 	matchFlag_= matchFlag;
 
-	//KF->setMatchFlag(matchFlag);
+	KF->setMatchFlag(matchFlag);
+
 	//Target processing
 	//Track prediction
 	if (matchFlag == 0) {
@@ -40,9 +41,12 @@ void Track::setDetection(const float& range,const float& angle, Eigen::Vector3f 
 	//Compute detection in navigation frame coordinates
 	body2nav(range, angle, beagleMeas); //TODO Body2Nav - Perhaps we need predictions later instead of measurements
 
-	x_measVec.push_back(std::min(navDet(0), float(3000.0)));
-	y_measVec.push_back(std::min(navDet(1), float(3000.0)));
+	if (matchFlag_ != 2) {
+		x_measVec.push_back(std::min(navDet(0), float(3000.0)));
+		y_measVec.push_back(std::min(navDet(1), float(3000.0)));
 
+		std::cout << "x: " << navDet(0) << " - y: " << navDet(1) << "\n" << std::endl;
+	}
 }
 
 void Track::body2nav(float range, float angle, Eigen::Vector3f& beagleMeas) {

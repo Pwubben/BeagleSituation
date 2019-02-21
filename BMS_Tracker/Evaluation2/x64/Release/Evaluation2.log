@@ -1,9 +1,11 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: The intermediate directory (x64\Release\) contains files shared from another project (Evaluation2.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Detection.cpp
-c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\Tracker.h(223): warning C4838: conversion from 'double' to 'float' requires a narrowing conversion
+  DataAss.cpp
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\Tracker.h(224): warning C4838: conversion from 'double' to 'float' requires a narrowing conversion
+  Track.cpp
+c:\users\pimwu\documents\github\beaglesituation\bms_tracker\evaluation2\Tracker.h(224): warning C4838: conversion from 'double' to 'float' requires a narrowing conversion
   Generating code
-  281 of 6038 functions ( 4.7%) were compiled, the rest were copied from previous compilation.
+  288 of 5827 functions ( 4.9%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    50 functions had inline decision re-evaluated but remain unchanged
+    37 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   Evaluation2.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\BMS_Tracker\x64\Release\Evaluation.exe

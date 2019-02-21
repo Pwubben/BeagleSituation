@@ -67,7 +67,6 @@ public:
 		float value = (int)(var * 100 + .5);
 		return (float)value / 100;
 	}
-
 };
 
 
@@ -81,10 +80,12 @@ public:
 	void predict();
 	void update(Eigen::Vector2f& selected_detections);
 	Eigen::Vector2f getPrediction();
+	void setMatchFlag(int mf);
 
 private:
 	const float dt = 1 / float(15); //15 FPS
 
+	int matchFlag;
 	Eigen::Matrix4f A; //Evolution state matrix
 	Eigen::Matrix2f Q; //Covariance Matrix associated to the evolution process
 	Eigen::MatrixXf G; //Evolution Noise Matrix
@@ -232,15 +233,16 @@ public:
 	void run(const struct detection& info);
 
 	void setBeagleData(Eigen::Vector4f& beagleData_);
-	std::pair<bool, int > findInVector(const std::vector<float>& vecOfElements, const float& element);
+	std::pair<bool, int> findInVector(const std::vector<float>& vecOfElements, const float& element);
+	std::pair<bool, int> findRangeVector(const std::vector<float>& vecOfElements, const float& element, const float& range);
 	std::vector<float> distancePL(matchedDetections detection, prediction prdct);
 	std::vector<float> distanceDet(std::vector<float> cdet, float rdet);
 
 	void drawResults();
 
 protected:
-	int count = 0;
-	
+	int drawCount = 0;
+	int radarCount = 0;
 	std::unique_ptr<EKF> BeagleTrack;
 	Eigen::Vector3f _beaglePrediction;
 	Eigen::Vector4f _beagleMeas;

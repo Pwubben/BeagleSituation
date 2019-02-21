@@ -67,7 +67,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 				count++;
 				duration = static_cast<double>(cv::getTickCount()) - duration;
 				duration /= cv::getTickFrequency();
-				std::cout << duration << std::endl;
+				//std::cout << duration << std::endl;
 
 				/*if (count == stopFrame)
 					break;*/

@@ -30,10 +30,10 @@ Kalman::Kalman(const Eigen::Vector2f& navDet, const float& vx, const float& vy) 
 		0, 10;
 
 	//INITIAL COVARIANCE MATRIX
-	P << 200, 0, 0, 0,
-		 0, 200, 0, 0,
-		 0, 0, 200, 0,
-		 0, 0, 0, 200;
+	P << 20, 0, 0, 0,
+		 0, 5, 0, 0,
+		 0, 0, 20, 0,
+		 0, 0, 0,5;
 	//GAIN     
 	K = Eigen::MatrixXf(4, 2);
 	
@@ -68,20 +68,31 @@ void Kalman::gainUpdate() {
 	P_predict = A*P*A.transpose() + G*Q*G.transpose();
 	Eigen::MatrixXf S = (C*P_predict*C.transpose() + R);
 	K = P_predict*C.transpose()*S.inverse();
-	P = P_predict - K*C*P_predict; //Check correctness
+	P = P_predict - K*C*P_predict; 
+
 	//std::cout << "dt: \n" << dt << std::endl;
 	//std::cout << "K: \n" << K<< std::endl;
 	//std::cout << "P: \n" << P << std::endl;
 }
 
 void Kalman::update(Eigen::Vector2f& selected_detection) {
-
-	//State update
-	std::cout << "Error: \n" << selected_detection - z_predict << std::endl;
-	x_filter = x_predict+K*(selected_detection-z_predict);
-	//std::cout << "x_filter: \n" << x_filter << std::endl;
-}
+	
+	if (matchFlag == 2)
+		x_filter = x_predict;
+	else
+	{
+		x_filter = x_predict + K*(selected_detection - z_predict);
+		//State update
+		//std::cout << "Error: \n" << selected_detection - z_predict << std::endl;
+		//std::cout << "x_filter: \n" << x_filter << std::endl;
+	}
+	}
+	
 
 Eigen::Vector2f Kalman::getPrediction() {
 	return z_predict;
+}
+
+void Kalman::setMatchFlag(int mf) {
+	matchFlag = mf;
 }
