@@ -108,6 +108,10 @@ void EKF::updateJA(float dt) {
 		x(4) = x(4);
 	}
 
+	//Wrap angles
+	if (x(2) < 0)
+		x(2) += 2.0*M_PI;
+
 	//std::cout <<"x state update: \n"<< x << std::endl;
 	int n = x.size();
 	JA = Eigen::MatrixXf(n, n);
@@ -147,7 +151,7 @@ void EKF::update(const Eigen::VectorXf& Z, const Eigen::VectorXf& Hx, const Eige
 	x_measVec.push_back(Z(0));
 	y_measVec.push_back(Z(1));
 
-	//std::cout << "Z: \n" <<Z << std::endl;
+	//std::cout << "Z: \n" <<Z - Hx << std::endl;
 	//std::cout << "x_update: \n" << x << std::endl;
 	//std::cout << "z: \n" << Z << std::endl;
 	//std::cout << "JA: \n" << JA << std::endl;

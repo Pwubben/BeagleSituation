@@ -82,12 +82,14 @@ public:
 	Eigen::Vector2f getPrediction();
 	void setMatchFlag(int mf);
 
+	void setR(Eigen::MatrixXf R);
+
 private:
 	const float dt = 1 / float(15); //15 FPS
 
 	int matchFlag;
 	Eigen::Matrix4f A; //Evolution state matrix
-	Eigen::Matrix2f Q; //Covariance Matrix associated to the evolution process
+	Eigen::Matrix4f Q; //Covariance Matrix associated to the evolution process
 	Eigen::MatrixXf G; //Evolution Noise Matrix
 	Eigen::Matrix4f P; //Covariance Matrix
 	Eigen::MatrixXf C;
@@ -153,30 +155,10 @@ private:
 
 class Track {
 public:
-	Track(float range, float angle, Eigen::Vector3f beagleMeas) : detectionAbsence(0) {
-		range_ = range;
-		angle_ = angle;
-
-		body2nav(range, angle, beagleMeas);
-
-		x_measVec.push_back(std::min(navDet(0), float(3000.0)));
-		y_measVec.push_back(std::min(navDet(1), float(3000.0)));
-
-		//Target processing
-		//Initial velocity estimates [m/s]
-
-		//omega = 0;
-
-		float vInit = 6;
-		float headingInit = atan2(beagleMeas(0) - navDet(0), beagleMeas(1) - navDet(1));
-		vxInit = sin(headingInit)*vInit;
-		vyInit = cos(headingInit)*vInit;
-
-		//Kalman filter track
-		KF = std::make_unique<Kalman>(navDet, vxInit, vyInit);
-	};
+	Track(float range, float angle, Eigen::Vector3f beagleMeas); 
 
 	void run(Eigen::Vector3f _beaglePrediction, int matchFlag);
+	void updateR(Eigen::Vector3f _beaglePrediction);
 	struct prediction getPrediction(); // based on protected values
 	float getDetection();
 	void setDetection(const float& range, const float& angle, Eigen::Vector3f beagleMeas);
@@ -193,6 +175,13 @@ protected:
 	// Initialization
 	float vxInit;
 	float vyInit;
+	Eigen::MatrixXf R;
+	Eigen::MatrixXf Rr;
+	Eigen::MatrixXf Rc;
+	Eigen::MatrixXf g;
+	float rangeVar;
+	float angleVar;
+	float varianceTimeFactor;
 
 	//Last detections
 	float range_;
@@ -213,15 +202,16 @@ protected:
 	//Prediction
 	Eigen::Vector2f prediction_coord;
 	prediction prediction_;
+
 };
 
 class DataAss {
 public:
-	DataAss::DataAss() : tracks_(), absenceThreshold(100) {
+	DataAss::DataAss() : tracks_(), absenceThreshold(300) {
 		//Kalman filter Beagle
 		Eigen::VectorXf xInit(5);
 		xInit << 0.0, 0.0, 0.0, 14.0, 0.0; // Initiate velocity as it is not measured
-		EKFParams params = { 0.1,200.0,1,0.05,0.05,0.05 };
+		EKFParams params = { 0.1, 200.0, 0.1, 0.05, 0.05, 0.05 };
 
 		//Initiate EKF for Beagle
 		BeagleTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
@@ -294,7 +284,7 @@ protected:
 	bool whitening = 0;
 
 	float radarRange = 926;
-	float FOV = 60;
+	float FOV = Util::deg2Rad(60);
 
 	//Capture information
 	cv::Rect seaWindow;

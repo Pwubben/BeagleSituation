@@ -24,10 +24,9 @@ void DataAss::run(const detection& info) {
 	detect.relRange.clear();
 	detect.relAngle.clear();
 
-	//for (int i = 0; i < info.radarRange.size(); i++) {
-	//	//Initiate new detection indexes with all detections
-	//	newRangeDetection.push_back(i);
-	//}
+	for (int i = 0; i < info.radarRange.size(); i++) {
+		//std::cout << "Range: " << info.radarRange[i] << "- Angle: " << info.radarAngle[i] << std::endl;
+	}
 
 	for (int i = 0; i < tracks_.size(); i++) {//Change later to more robust form - PDA
 		predictionVector[i] = tracks_[i].getPrediction();
@@ -45,11 +44,11 @@ void DataAss::run(const detection& info) {
 			//std::cout << tracks_[i].getDetection() << " - " << newRangeDetection[result.second] << std::endl;
 		}
 	}
-	
+
 	//Match radar and camera detections in case of new radar detection
 	for (int i = 0; i < newRangeDetection.size(); i++) {
 		if (newRangeDetection[i]) {
-			std::cout << "Range: " << info.radarRange[i] << "- Angle: " << info.radarAngle[i] << std::endl;
+			//
 			//Assign radar range to matched detection slot
 			detect.relRange.push_back(info.radarRange[i]);
 			//TODO - vector subscript out of range
@@ -91,7 +90,7 @@ void DataAss::run(const detection& info) {
 			if (polarDist[idxDetection] < detectionMatchThres) {
 				//Skip if it is first two new detections 
 				if (radarCount > 1) {
-					std::cout << "RadarCount: = " << radarCount << std::endl;
+					//std::cout << "RadarCount: = " << radarCount << std::endl;
 					radarCount = -3;
 					unassignedDetection[idxDetection] = false;
 				}
@@ -119,6 +118,7 @@ void DataAss::run(const detection& info) {
 		//		matchFlag[i] = 1;
 		//	}
 		//}
+
 		//Return prediction as measurement if no match is found
 		if (matchFlag[i] == -1) {
 			tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
@@ -150,10 +150,10 @@ void DataAss::run(const detection& info) {
 
 	drawCount++;
 	//Draw results
-	/*if (drawCount > 300) {
+	if (drawCount > 300) {
 		drawResults();
 		drawCount = 0;
-	}*/
+	}
 
 }
 
@@ -210,15 +210,15 @@ void DataAss::drawResults() {
 	//Plot Tracks
 	for (int i = 0; i < plotVectorsTargets.size(); i++) {
 		graph.addPlot(plotVectorsTargets[i][0], plotVectorsTargets[i][1], trackName[i*2]);
-		//graph.addPlot(plotVectorsTargets[i][2], plotVectorsTargets[i][3], trackName[i*2+1]);
+		graph.addPlot(plotVectorsTargets[i][2], plotVectorsTargets[i][3], trackName[i*2+1]);
 	}
 
 	//Plot Beagle Track
-	//graph.addPlot(plotVectorsBeagle[0], plotVectorsBeagle[1], "Beagle Measurement");
+	graph.addPlot(plotVectorsBeagle[0], plotVectorsBeagle[1], "Beagle Measurement");
 	graph.addPlot(plotVectorsBeagle[2], plotVectorsBeagle[3], "Beagle Prediction");
 
-
-	graph.plot();
+	if(!plotVectorsTargets.empty())
+		graph.plot();
 
 
 

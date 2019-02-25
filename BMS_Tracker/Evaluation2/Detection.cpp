@@ -27,7 +27,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	//Performance parameters
 	float max_dimension = 800;
 	float sample_step = 25;
-	float threshold = 5;
+	float threshold = 8;
 
 	bool check(false);
 	try {
@@ -111,7 +111,7 @@ void Detection::windowDetect(cv::Mat src, float max_dimension) {
 	src = src(seaWindow);
 
 	float w = (float)src.cols, h = (float)src.rows;
-	float maxD = max(w, h);
+	maxD = max(w, h);
 	resizeDim = { (int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD) };
 
 }
@@ -156,7 +156,7 @@ void Detection::radarDetection(Mat src) {
 	for (int i = 0; i < location.size(); i++)
 	{
 		range = sqrt(pow(float(radarCenter.x - location[i].x), 2) + pow(float(radarCenter.y - location[i].y), 2)) / radarRadius * radarRange;
-		angle = atan2(float(radarCenter.x - location[i].x) , float(radarCenter.y - location[i].y)) * 180.0 / M_PI;
+		angle = atan2(float(radarCenter.x - location[i].x) , float(radarCenter.y - location[i].y));
 		info.radarRange.push_back(Util::round(range));
 		info.radarAngle.push_back(angle);
 		//location[i].x = range;
@@ -222,15 +222,19 @@ void Detection::saliencyDetection(Mat src, float max_dimension, float sample_ste
 
 	//Resize bounding rectangles to compare
 	//vector<double> detectionAngles;
+	float angle;
 
 	for (int i = 0; i < boundRect.size(); i++) {
-		boundRect[i].x = boundRect[i].x*(float)(src.cols / (float)(max_dimension*src.cols / maxD));
+		boundRect[i].x = boundRect[i].x*(float)(src.cols / (float)(max_dimension*src.cols/maxD));
 		boundRect[i].width = boundRect[i].width*(float)(src.cols / (float)(max_dimension*src.cols / maxD));
-		boundRect[i].y = boundRect[i].y*(float)(src.rows / (float)(max_dimension*src.rows / maxD));
-		boundRect[i].height = boundRect[i].height*(float)(src.rows / (float)(max_dimension*src.rows / maxD));
+		boundRect[i].y = boundRect[i].y*(float)(src.rows / (float)(max_dimension*src.rows / src.cols));
+		boundRect[i].height = boundRect[i].height*(float)(src.rows / (float)(max_dimension*src.rows / src.cols));
 	
 		//detectionAngles.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
-		info.cameraAngle.push_back(float((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
+		angle = float((boundRect[i].x + 0.5*boundRect[i].width - 0.5*src.cols) * float(FOV / src.cols));
+		if (angle < 0)
+			angle += 2.0* M_PI;
+		info.cameraAngle.push_back(angle);
 
 	}
 	duration = static_cast<double>(cv::getTickCount()) - duration;
@@ -238,7 +242,7 @@ void Detection::saliencyDetection(Mat src, float max_dimension, float sample_ste
 
 	//cout << duration << endl;
 	// Draw bonding rects 
-	/*Mat drawing = Mat::zeros(mask_trh.size(), CV_8UC3);
+	Mat drawing = Mat::zeros(mask_trh.size(), CV_8UC3);
 	RNG rng(0xFFFFFFFF);
 	Scalar color = Scalar(0, 200, 50);
 
@@ -249,8 +253,8 @@ void Detection::saliencyDetection(Mat src, float max_dimension, float sample_ste
 	}
 
 	imshow("Src", drawWindow);
-	waitKey(1);*/
-	
+	waitKey(1);
+	waitKey(1);
 	//Compute angle
 	
 	//info.cameraAngle = detectionAngles;

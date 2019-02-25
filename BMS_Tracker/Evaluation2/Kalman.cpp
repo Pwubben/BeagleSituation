@@ -24,16 +24,19 @@ Kalman::Kalman(const Eigen::Vector2f& navDet, const float& vx, const float& vy) 
 	C << 1, 0, 0, 0,
 		 0, 0, 1, 0;
 
-	Q << 10, 0,
-		0, 10;
-	R << 10, 0,
-		0, 10;
+	Q << 1, 0, 0 , 0,
+		0, 0.1, 0 , 0,
+		0 ,0, 1, 0,
+		0, 0 , 0, 0.1;
+
+	R << 1, 0,
+		0, 1;
 
 	//INITIAL COVARIANCE MATRIX
-	P << 20, 0, 0, 0,
-		 0, 5, 0, 0,
-		 0, 0, 20, 0,
-		 0, 0, 0,5;
+	P << 1, 0, 0, 0,
+		 0, 0.1, 0, 0,
+		 0, 0, 1, 0,
+		 0, 0, 0,0.1;
 	//GAIN     
 	K = Eigen::MatrixXf(4, 2);
 	
@@ -48,14 +51,10 @@ Kalman::Kalman(const Eigen::Vector2f& navDet, const float& vx, const float& vy) 
 
 
 void Kalman::predict() {
-	if (init) {
-		x_predict << last_prediction(0), last_velocity(0), last_prediction(1), last_velocity(1);
-		init = false;
-	}
-	else {
+
 		//Predicted states based on kalman filtered states
 		x_predict = A*x_filter;	
-	}
+	
 		//Predicted covariance matrix
 		
 		//Predicted measurements
@@ -65,7 +64,7 @@ void Kalman::predict() {
 }
 
 void Kalman::gainUpdate() {
-	P_predict = A*P*A.transpose() + G*Q*G.transpose();
+	P_predict = A*P*A.transpose() + Q;
 	Eigen::MatrixXf S = (C*P_predict*C.transpose() + R);
 	K = P_predict*C.transpose()*S.inverse();
 	P = P_predict - K*C*P_predict; 
@@ -76,17 +75,22 @@ void Kalman::gainUpdate() {
 }
 
 void Kalman::update(Eigen::Vector2f& selected_detection) {
-	
-	if (matchFlag == 2)
-		x_filter = x_predict;
-	else
-	{
-		x_filter = x_predict + K*(selected_detection - z_predict);
-		//State update
-		//std::cout << "Error: \n" << selected_detection - z_predict << std::endl;
-		//std::cout << "x_filter: \n" << x_filter << std::endl;
+	if (init) {
+		x_filter << last_prediction(0), last_velocity(0), last_prediction(1), last_velocity(1);
+		init = false;
 	}
+	else {
+		if (matchFlag == 2)
+			x_filter = x_predict;
+		else
+		{
+			x_filter = x_predict + K*(selected_detection - z_predict);
+			//State update
+			//std::cout << "Error: \n" << selected_detection - z_predict << std::endl;
+			std::cout << "x_filter: \n" << x_filter << std::endl;
+		}
 	}
+}
 	
 
 Eigen::Vector2f Kalman::getPrediction() {
@@ -95,4 +99,8 @@ Eigen::Vector2f Kalman::getPrediction() {
 
 void Kalman::setMatchFlag(int mf) {
 	matchFlag = mf;
+}
+
+void Kalman::setR(Eigen::MatrixXf R_) {
+	R = R_;
 }
