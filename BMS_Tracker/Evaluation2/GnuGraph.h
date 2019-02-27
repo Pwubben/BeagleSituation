@@ -236,8 +236,8 @@ private:
 		  if (titles.size() > 0)
 			  title = titles.front();
 
-		  //setup += "set xrange[-200:400]\n";
-		  //setup += " set yrange[-200:950]\n";
+		  setup += "set xrange[-450:100]\n";
+		  setup += " set yrange[0:800]\n";
 			 
 		  setup += "set term win\n ";
 		  setup += "plot '-' ";	// "-" for realtime plotting

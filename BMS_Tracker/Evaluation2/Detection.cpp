@@ -8,7 +8,7 @@ using namespace std;
 
 
 
-void Detection::run(std::string File, std::string groundTruthFile, std::string beagleFile) {
+void Detection::run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile) {
 	cout << File << endl;
 	//Load ground truth data
 	std::vector<Rect> GT;
@@ -20,14 +20,14 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	}*/
 	
 	//Load Beagle Data
-	std::vector<Eigen::Vector4f> beagleData_ = loadBeagleData(getFileString(beagleFile));
-
+	std::vector<Eigen::Vector4d> beagleData_ = loadBeagleData(getFileString(beagleFile));
+	std::vector<Eigen::Vector2d> radarData_  = loadRadarData(getFileString(radarFile));
 	int count = 0;
 
 	//Performance parameters
-	float max_dimension = 800;
-	float sample_step = 25;
-	float threshold = 8;
+	double max_dimension = 800;
+	double sample_step = 25;
+	double threshold = 6;
 
 	bool check(false);
 	try {
@@ -42,12 +42,13 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 			while (1) {
 				double duration = static_cast<double>(cv::getTickCount());
-				if (count == 0) {
-					for (int i = 0; i < 110; i++) {
-						capture >> src;
-						count++;
-					}
-				}
+				//if (count == 0) {
+				//	for (int i = 0; i < 110; i++) {
+				//		capture >> src;
+				//		count++;
+				//	}
+				//}
+
 				capture >> src;
 				if (src.empty())
 					break;
@@ -57,7 +58,10 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 				info.cameraAngle.clear();
 
 				//Radar detector
-				radarDetection(src(radarWindow));
+				//radarDetection(src(radarWindow));
+				info.radarRange.push_back(radarData_[count](0));
+				info.radarAngle.push_back(radarData_[count](1));
+
 				//Camera detector
 				saliencyDetection(src, max_dimension, sample_step, threshold, GT);
 		
@@ -85,7 +89,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 }
 
-void Detection::windowDetect(cv::Mat src, float max_dimension) {
+void Detection::windowDetect(cv::Mat src, double max_dimension) {
 	cv::Mat src_gray;
 	cv::cvtColor(src, src_gray, CV_BGR2GRAY);
 	GaussianBlur(src_gray, src_gray, cv::Size(9, 9), 2, 2);
@@ -110,7 +114,7 @@ void Detection::windowDetect(cv::Mat src, float max_dimension) {
 
 	src = src(seaWindow);
 
-	float w = (float)src.cols, h = (float)src.rows;
+	double w = (double)src.cols, h = (double)src.rows;
 	maxD = max(w, h);
 	resizeDim = { (int)(max_dimension*w / maxD), (int)(max_dimension*h / maxD) };
 
@@ -121,8 +125,11 @@ void Detection::radarDetection(Mat src) {
 	std::vector<cv::Mat> channels_rad;
 	cv::split(src, channels_rad);
 
+	//TODO - Temporary value
+	radarCenter = cv::Point(154, 151);
+
 	cv::Mat radar_mask;
-	cv::threshold(channels_rad[2], radar_mask, 120, 255, CV_THRESH_BINARY);
+	cv::threshold(channels_rad[2], radar_mask, 130, 255, CV_THRESH_BINARY);
 	imshow("radar", radar_mask);
 	waitKey(1);
 	circle(src, radarCenter, 1, cv::Scalar(0, 255, 0), -1, 8, 0);
@@ -134,15 +141,17 @@ void Detection::radarDetection(Mat src) {
 
 	std::vector<float> radius_detection(contours.size());
 	std::vector<Point2f> location(contours.size());
-	float range, angle;
+	double range, angle;
 	int eraseIdx = -1;
 	for (int i = 0; i < contours.size(); i++)
 	{
 		minEnclosingCircle((Mat)contours[i], location[i], radius_detection[i]);
+
 		for (int i = 0; i < location.size(); i++) {
-			if ((abs(location[i].x - radarCenter.x) < 2) && (abs(location[i].y - radarCenter.y) < 2)) {
+			if ((abs(double(location[i].x) - radarCenter.x) < 4) && (abs(double(location[i].y) - radarCenter.y) < 4)) {
 				if (!centerInit) {
-					radarCenter = cv::Point(location[i].x, location[i].y);
+					radarCenter = cv::Point(154, 151);
+					//radarCenter = cv::Point(location[i].x, location[i].y);
 					centerInit = true;
 				}
 				eraseIdx = i;
@@ -153,10 +162,13 @@ void Detection::radarDetection(Mat src) {
 	if (eraseIdx > -1)
 		location.erase(location.begin() + eraseIdx);
 
+	if (location.size() > 1) {
+		std::cout << 2 << std::endl;
+	}
 	for (int i = 0; i < location.size(); i++)
 	{
-		range = sqrt(pow(float(radarCenter.x - location[i].x), 2) + pow(float(radarCenter.y - location[i].y), 2)) / radarRadius * radarRange;
-		angle = atan2(float(radarCenter.x - location[i].x) , float(radarCenter.y - location[i].y));
+		range = sqrt(pow(double(location[i].x- radarCenter.x), 2) + pow(double(radarCenter.y-location[i].y), 2)) / radarRadius * radarRange;
+		angle = atan2(double(location[i].x - radarCenter.x) , double(radarCenter.y - location[i].y));
 		info.radarRange.push_back(Util::round(range));
 		info.radarAngle.push_back(angle);
 		//location[i].x = range;
@@ -166,7 +178,7 @@ void Detection::radarDetection(Mat src) {
 	//return location;
 }
 
-void Detection::saliencyDetection(Mat src, float max_dimension, float sample_step, float threshold, vector<Rect> GT)
+void Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, vector<Rect> GT)
 {
 	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true)
 
@@ -182,7 +194,7 @@ void Detection::saliencyDetection(Mat src, float max_dimension, float sample_ste
 
 	// Computing saliency 
 	BMS bms(src_small, dilation_width_1, use_normalize, handle_border, colorSpace, whitening);
-	bms.computeSaliency((float)sample_step);
+	bms.computeSaliency((double)sample_step);
 
 	sResult = bms.getSaliencyMap();
 
@@ -222,18 +234,18 @@ void Detection::saliencyDetection(Mat src, float max_dimension, float sample_ste
 
 	//Resize bounding rectangles to compare
 	//vector<double> detectionAngles;
-	float angle;
+	double angle;
 
 	for (int i = 0; i < boundRect.size(); i++) {
-		boundRect[i].x = boundRect[i].x*(float)(src.cols / (float)(max_dimension*src.cols/maxD));
-		boundRect[i].width = boundRect[i].width*(float)(src.cols / (float)(max_dimension*src.cols / maxD));
-		boundRect[i].y = boundRect[i].y*(float)(src.rows / (float)(max_dimension*src.rows / src.cols));
-		boundRect[i].height = boundRect[i].height*(float)(src.rows / (float)(max_dimension*src.rows / src.cols));
+		boundRect[i].x = boundRect[i].x*(double)(src.cols / (double)(max_dimension*src.cols/maxD));
+		boundRect[i].width = boundRect[i].width*(double)(src.cols / (double)(max_dimension*src.cols / maxD));
+		boundRect[i].y = boundRect[i].y*(double)(src.rows / (double)(max_dimension*src.rows / src.cols));
+		boundRect[i].height = boundRect[i].height*(double)(src.rows / (double)(max_dimension*src.rows / src.cols));
 	
-		//detectionAngles.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * float(FOV / src.cols)));
-		angle = float((boundRect[i].x + 0.5*boundRect[i].width - 0.5*src.cols) * float(FOV / src.cols));
-		if (angle < 0)
-			angle += 2.0* M_PI;
+		//detectionAngles.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * double(FOV / src.cols)));
+		angle = double((boundRect[i].x + 0.5*boundRect[i].width - 0.5*src.cols) * double(FOV / src.cols));
+		/*if (angle < 0)
+			angle += 2.0* M_PI;*/
 		info.cameraAngle.push_back(angle);
 
 	}
@@ -288,21 +300,21 @@ vector<vector<int>> Detection::readGroundTruth(std::string fileName){
 }
 
 std::string Detection::getFileString(std::string fileName) {
-	std::string path = "F:\\Nautis Run 13-2-19\\";
+	std::string path = "F:\\Nautis Run 25-2-2019\\";
 	std::stringstream ss;
 	ss << path << fileName;
 	std::string file = ss.str();
 	return file;
 }
 
-std::vector<Eigen::Vector4f> Detection::loadBeagleData(std::string beagleFile) {
-	vector<Eigen::Vector4f> beagleData_;
+std::vector<Eigen::Vector4d> Detection::loadBeagleData(std::string beagleFile) {
+	vector<Eigen::Vector4d> beagleData_;
 	ifstream file(beagleFile);
 	string line;
 	while (getline(file, line))
 	{
 		//vector<int> row;
-		Eigen::Vector4f row;
+		Eigen::Vector4d row;
 		int i = 0;
 		stringstream iss(line);
 		string val;
@@ -319,6 +331,26 @@ std::vector<Eigen::Vector4f> Detection::loadBeagleData(std::string beagleFile) {
 	return beagleData_;
 }
 
-void drawResults() {
+std::vector<Eigen::Vector2d> Detection::loadRadarData(std::string radarFile) {
+	vector<Eigen::Vector2d> radarData_;
+	ifstream file(radarFile);
+	string line;
+	while (getline(file, line))
+	{
+		//vector<int> row;
+		Eigen::Vector2d row;
+		int i = 0;
+		stringstream iss(line);
+		string val;
 
+		// while getline gives correct result
+		while (getline(iss, val, ','))
+		{
+			row(i) = stof(val);
+			i++;
+		}
+
+		radarData_.push_back(row);
+	}
+	return radarData_;
 }

@@ -26,13 +26,17 @@ void unPause(cv::VideoCapture src, int& begin) {
 		//cv::Scalar(0, 0, 0)
 		//eq = cv::countNonZero(compFrame != frame1) == 0;
 		std::cout << (cv::sum(frame1 != compFrame)) << std::endl;
-		/*cv::imshow("Frame", compFrame);
-		cv::imshow("Frame1", frame1);*/
+	
 		
 		src >> tSrc;
+		
+		
 		cv::cvtColor(tSrc, tSrc, CV_BGR2GRAY);
 		compFrame = tSrc(testScr);
 		frameCount++;
+		//cv::imshow("Frame1", tSrc);
+		//std::cout << frameCount << std::endl;
+		//cv::waitKey(0);
 
 		/*isEqual = (cv::sum(frame1 != compFrame) == cv::Scalar(0, 0, 0));
 		std::cout << isEqual << std::endl;
@@ -103,6 +107,7 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 		}
 	}
 	std::cout << "Done" << std::endl;
+	std::cout << count << std::endl;
 	video.release();
 }
 
@@ -194,10 +199,10 @@ double IMUData(std::string s, std::string d) {
 	
 	std::ofstream myfile(d, std::ofstream::out | std::ofstream::trunc);
 
-	for (int i = 0; i < ROTvec_ret1.size(); i++) {
-		myfile << latvec_ret1[i] << "," << lonvec_ret1[i] << "," << HDTvec_ret1[i] << "," << ROTvec_ret1[i] << std::endl;
+	for (int i = 0; i < ROTvec.size(); i++) {
+		myfile << latvec[i] << "," << lonvec[i] << "," << HDTvec[i] << "," << ROTvec[i] << std::endl;
 	}
 	myfile.close();
-	double vidSize = lonvec_ret1.size();
+	double vidSize = lonvec.size();
 	return vidSize;
 }

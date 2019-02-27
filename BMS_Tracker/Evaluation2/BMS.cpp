@@ -153,7 +153,7 @@ Mat BMS::getSaliencyMap()
 	return ret;
 }
 
-void BMS::whitenFeatMap(const cv::Mat& img, float reg)
+void BMS::whitenFeatMap(const cv::Mat& img, double reg)
 {
 	assert(img.channels() == 3 && img.type() == CV_8UC3);
 

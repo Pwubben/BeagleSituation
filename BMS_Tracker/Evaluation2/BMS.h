@@ -33,7 +33,7 @@ private:
 	bool mWhitening;
 	int mColorSpace;
 	cv::Mat getAttentionMap(const cv::Mat& bm, int dilation_width_1, bool toNormalize, bool handle_border);
-	void whitenFeatMap(const cv::Mat& img, float reg);
+	void whitenFeatMap(const cv::Mat& img, double reg);
 };
 
 

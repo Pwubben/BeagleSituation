@@ -123,9 +123,9 @@ void DataGeneration(std::string videoFile, std::string groundTruthFile, std::str
 	//Compute performance result
 	vector<double> TPR, FPR, precision;
 	for (int i = 0; i < meanfalsePositiveCountGMM.size(); i++) {
-		TPR.push_back(double(meantruePositiveCountGMM[i] / float(meantruePositiveCountGMM[i] + meanFalseNegativeCountGMM[i])));
-		FPR.push_back(double(meanfalsePositiveCountGMM[i] / float(meanTrueNegativeCountGMM[i] + meanfalsePositiveCountGMM[i])));
-		precision.push_back(double(meantruePositiveCountGMM[i] / float(meantruePositiveCountGMM[i] + meanfalsePositiveCountGMM[i])));
+		TPR.push_back(double(meantruePositiveCountGMM[i] / double(meantruePositiveCountGMM[i] + meanFalseNegativeCountGMM[i])));
+		FPR.push_back(double(meanfalsePositiveCountGMM[i] / double(meanTrueNegativeCountGMM[i] + meanfalsePositiveCountGMM[i])));
+		precision.push_back(double(meantruePositiveCountGMM[i] / double(meantruePositiveCountGMM[i] + meanfalsePositiveCountGMM[i])));
 	}
 	//Saliecy Result File
 	/*std::string file = getFileString(SalResultFile);
@@ -415,9 +415,9 @@ void trueFalsePositiveRateROCGMM(vector<Rect> boundRectData, Rect groundTruth, v
 		trueNegatives++;
 	}
 	//Area evaluation 
-	truePositiveArea.back().push_back(double(intersectArea / float(groundTruth.width*groundTruth.height)));
-	falsePositiveArea.back().push_back(double(intersectArea / float(1902*536 -(intersectArea + falseArea))));
-	precisionArea.back().push_back(double(intersectArea / float(intersectArea + falseArea)));
+	truePositiveArea.back().push_back(double(intersectArea / double(groundTruth.width*groundTruth.height)));
+	falsePositiveArea.back().push_back(double(intersectArea / double(1902*536 -(intersectArea + falseArea))));
+	precisionArea.back().push_back(double(intersectArea / double(intersectArea + falseArea)));
 
 	//Count evaluation
 	truePositiveCount.back().push_back(double(truePositives));
@@ -482,14 +482,14 @@ void trueFalsePositiveRateROC(vector<Rect> boundRectData, Rect groundTruth, vect
 		falseNegatives++;
 	}
 	//Area evaluation 
-	truePositiveArea.back().push_back(double(intersectArea / float(groundTruth.width*groundTruth.height)));
-	falsePositiveArea.back().push_back(double(falseArea / float(intersectArea+falseArea)));
-	precisionArea.back().push_back(double(intersectArea / float(intersectArea + falseArea)));
+	truePositiveArea.back().push_back(double(intersectArea / double(groundTruth.width*groundTruth.height)));
+	falsePositiveArea.back().push_back(double(falseArea / double(intersectArea+falseArea)));
+	precisionArea.back().push_back(double(intersectArea / double(intersectArea + falseArea)));
 	
 	//Count evaluation
-	truePositiveCount.back().push_back(double(truePositives/ float(truePositives+falseNegatives)));
-	falsePositiveCount.back().push_back(double(falsePositives / float(truePositives + falsePositives)));
-	precisionCount.back().push_back(double(truePositives / float(truePositives + falsePositives)));
+	truePositiveCount.back().push_back(double(truePositives/ double(truePositives+falseNegatives)));
+	falsePositiveCount.back().push_back(double(falsePositives / double(truePositives + falsePositives)));
+	precisionCount.back().push_back(double(truePositives / double(truePositives + falsePositives)));
 
 	//IoU
  	IoU.back().push_back(IoUavg);
@@ -551,13 +551,13 @@ void trueFalsePositiveRate(vector<vector<vector<vector<int>>>> boundRectData, ve
 
 			// Area over Union per time step
 			IoUtime.push_back(IoUavg);
-			precisionTime.push_back(truePositiveCount[i][j] / float(truePositiveCount[i][j] + falsePositiveCount[i][j]));
-			//recallTime.push_back(truePositiveCount[i][j] / float(truePositiveCount[i][j] + falseNegativeCount[i][j]));
+			precisionTime.push_back(truePositiveCount[i][j] / double(truePositiveCount[i][j] + falsePositiveCount[i][j]));
+			//recallTime.push_back(truePositiveCount[i][j] / double(truePositiveCount[i][j] + falseNegativeCount[i][j]));
 		}
 		// Area over Union for parameter set
 		IoU.push_back(IoUtime);
 		precision.push_back(precisionTime);
-		recall.push_back(std::accumulate(truePositiveCount[i].begin(), truePositiveCount[i].end(), 0)/float(std::accumulate(truePositiveCount[i].begin(), truePositiveCount[i].end(), 0)+ std::accumulate(falseNegativeCount[i].begin(), falseNegativeCount[i].end(), 0)));
+		recall.push_back(std::accumulate(truePositiveCount[i].begin(), truePositiveCount[i].end(), 0)/double(std::accumulate(truePositiveCount[i].begin(), truePositiveCount[i].end(), 0)+ std::accumulate(falseNegativeCount[i].begin(), falseNegativeCount[i].end(), 0)));
 	}
 }
 
@@ -614,7 +614,7 @@ double IntersectionOverUnion(cv::Point l1,cv::Point r1,cv::Point l2,cv::Point r2
 	//Compute the intersection over union by taking the intersection
 	//area and dividing it by the sum of prediction + ground - truth
 	//areas - the interesection area
-	double IoU = interArea / float(boxAArea + boxBArea - interArea);
+	double IoU = interArea / double(boxAArea + boxBArea - interArea);
 	return IoU;
 }
 

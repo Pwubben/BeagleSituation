@@ -3,7 +3,7 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-Kalman::Kalman(const Eigen::Vector2f& navDet, const float& vx, const float& vy) {
+Kalman::Kalman(const Eigen::Vector2d& navDet, const double& vx, const double& vy) {
 	
 	//TRANSITION MATRIX
 	A << 1, dt, 0, 0,
@@ -12,7 +12,7 @@ Kalman::Kalman(const Eigen::Vector2f& navDet, const float& vx, const float& vy) 
 	   	 0, 0, 0, 1;
 
 	//NOISE EVOLUTION
-	G = Eigen::MatrixXf(4, 2);
+	G = Eigen::MatrixXd(4, 2);
 
 	G << std::pow(dt, 2) / 2, 0,
 		dt, 0,
@@ -20,32 +20,32 @@ Kalman::Kalman(const Eigen::Vector2f& navDet, const float& vx, const float& vy) 
 		0, dt;
 
 	//STATE OBSERVATION MATRIX
-	C = Eigen::MatrixXf(2, 4);
+	C = Eigen::MatrixXd(2, 4);
 	C << 1, 0, 0, 0,
 		 0, 0, 1, 0;
 
-	Q << 1, 0, 0 , 0,
-		0, 0.1, 0 , 0,
-		0 ,0, 1, 0,
-		0, 0 , 0, 0.1;
+	Q << 20, 0, 0 , 0,
+		0, 3, 0 , 0,
+		0 ,0, 20, 0,
+		0, 0 , 0,3;
 
 	R << 1, 0,
 		0, 1;
 
 	//INITIAL COVARIANCE MATRIX
-	P << 1, 0, 0, 0,
-		 0, 0.1, 0, 0,
-		 0, 0, 1, 0,
-		 0, 0, 0,0.1;
+	P << 15, 0, 0, 0,
+		 0, 2, 0, 0,
+		 0, 0, 15, 0,
+		 0, 0, 0,2;
 	//GAIN     
-	K = Eigen::MatrixXf(4, 2);
+	K = Eigen::MatrixXd(4, 2);
 	
 	last_prediction = navDet;
 	last_velocity << vx, vy;
 	init = true;
 }
 
-//Kalman::Kalman(const float dt, const float& x, const float& y, const float& vx, const float& vy, const float& omega, const float& omegad) {
+//Kalman::Kalman(const double dt, const double& x, const double& y, const double& vx, const double& vy, const double& omega, const double& omegad) {
 //
 //}
 
@@ -65,7 +65,7 @@ void Kalman::predict() {
 
 void Kalman::gainUpdate() {
 	P_predict = A*P*A.transpose() + Q;
-	Eigen::MatrixXf S = (C*P_predict*C.transpose() + R);
+	Eigen::MatrixXd S = (C*P_predict*C.transpose() + R);
 	K = P_predict*C.transpose()*S.inverse();
 	P = P_predict - K*C*P_predict; 
 
@@ -74,7 +74,7 @@ void Kalman::gainUpdate() {
 	//std::cout << "P: \n" << P << std::endl;
 }
 
-void Kalman::update(Eigen::Vector2f& selected_detection) {
+void Kalman::update(Eigen::Vector2d& selected_detection) {
 	if (init) {
 		x_filter << last_prediction(0), last_velocity(0), last_prediction(1), last_velocity(1);
 		init = false;
@@ -87,13 +87,14 @@ void Kalman::update(Eigen::Vector2f& selected_detection) {
 			x_filter = x_predict + K*(selected_detection - z_predict);
 			//State update
 			//std::cout << "Error: \n" << selected_detection - z_predict << std::endl;
-			std::cout << "x_filter: \n" << x_filter << std::endl;
+			
 		}
+		//std::cout << "x_filter: \n" << x_filter << std::endl;
 	}
 }
 	
 
-Eigen::Vector2f Kalman::getPrediction() {
+Eigen::Vector2d Kalman::getPrediction() {
 	return z_predict;
 }
 
@@ -101,6 +102,6 @@ void Kalman::setMatchFlag(int mf) {
 	matchFlag = mf;
 }
 
-void Kalman::setR(Eigen::MatrixXf R_) {
+void Kalman::setR(Eigen::MatrixXd R_) {
 	R = R_;
 }
