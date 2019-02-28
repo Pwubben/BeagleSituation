@@ -6,7 +6,7 @@
 #include <Eigen/Dense>
 
 EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXd xInit)
-	: dt(1/double(15)), init(true), _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel), x(xInit)
+	: dt(1/double(15)), init(true), _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel), x(xInit), BeagleObject(true)
 {
 	I = Eigen::MatrixXd::Identity(n, n);
 	
@@ -17,6 +17,19 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 		0.0, 0.0, 0.0, 15.0, 0.0,
 		0.0, 0.0, 0.0, 0.0, 10.0;
 		
+	Q = Eigen::MatrixXd(n, n);
+
+	sGPS = 0.5 * _max_acceleration * pow(dt, 2);
+	sVelocity = _max_acceleration * dt;
+	sCourse = _max_turn_rate * dt;
+	sYaw = _max_yaw_accel * dt;
+	sAccel = _max_acceleration;
+
+	Q << pow(sGPS, 2), 0.0, 0.0, 0.0, 0.0,
+		0.0, pow(sGPS, 2), 0.0, 0.0, 0.0,
+		0.0, 0.0, pow(sCourse, 2), 0.0, 0.0,
+		0.0, 0.0, 0.0, pow(sVelocity, 2), 0.0,
+		0.0, 0.0, 0.0, 0.0, pow(sYaw, 2);
 
 	R = Eigen::MatrixXd(4, 4); //4 sources of measurement for Beagle
 	R << pow(varGPS, 2), 0.0, 0.0, 0.0,
@@ -32,29 +45,29 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 		0.0, 0.0, 0.0, 0.0, 1.0;
 }
 
+EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber = 0) : 
+	Q(Q_),
+	P(P_) 
+{
+
+	//Initial state
+	x << navDet, v, heading, 0;
+
+	JH = Eigen::MatrixXd(2, 5);
+	JH << 1.0, 0.0, 0.0, 0.0, 0.0,
+		  0.0, 1.0, 0.0, 0.0, 0.0;
+}
+
 void EKF::compute(Eigen::VectorXd z) {
 	if (init) {
-		
 		init = false;
 	}
 	else {
 		
-		//std::cout << "z: \n" << z << std::endl;
-		/********************
-		- Update step
-		*********************/
-		
-
-		//Eigen::VectorXf Hx(z.size());
-		//Hx << x(0), x(1), x(2), x(4);
-		//Update parameters
-		//update(z, JH*x, JH, R);
-
 		/********************
 		- Prediction step
 		*********************/
-		//Update process covariance
-		updateQ(dt);
+	
 		//Update state and Jacobian
 		updateJA(dt);
 		//Prediction
@@ -62,19 +75,7 @@ void EKF::compute(Eigen::VectorXd z) {
 	}
 }
 
-void EKF::updateQ(double dt) {
-	Q = Eigen::MatrixXd(n, n);
-	sGPS = 0.5 * _max_acceleration * pow(dt, 2);
-	sVelocity = _max_acceleration * dt;
-	sCourse = _max_turn_rate * dt;
-	sYaw = _max_yaw_accel * dt;
-	sAccel = _max_acceleration;
-	Q << pow(sGPS, 2), 0.0, 0.0, 0.0, 0.0,
-		0.0, pow(sGPS, 2), 0.0, 0.0, 0.0,
-		0.0, 0.0, pow(sCourse, 2), 0.0, 0.0,
-		0.0, 0.0, 0.0, pow(sVelocity, 2), 0.0,
-		0.0, 0.0, 0.0, 0.0, pow(sYaw, 2);
-}
+
 
 void EKF::updateJA(double dt) {
 	//Update state
@@ -103,10 +104,6 @@ void EKF::updateJA(double dt) {
 		x(4) = x(4);
 	}
 
-	//Wrap angles
-	//if (x(2) < 0)
-	//	x(2) += 2.0*M_PI;
-
 	//std::cout <<"x state update: \n"<< x << std::endl;
 	int n = x.size();
 	JA = Eigen::MatrixXd(n, n);
@@ -134,7 +131,7 @@ void EKF::predict() {
 void EKF::update(const Eigen::VectorXd& z) {
 
 	if (init) {
-		if (z.size() == 4) {
+		if (BeagleObject) {
 			//Beagle initiation
 			x(0) = z(0);
 			x(1) = z(1);
@@ -155,11 +152,12 @@ void EKF::update(const Eigen::VectorXd& z) {
 		// Update estimate
 		x = x + K * (z - JH*x);
 
-		x_predictVec.push_back(x(0));
-		y_predictVec.push_back(x(1));
-		x_measVec.push_back(z(0));
-		y_measVec.push_back(z(1));
-
+		if (BeagleObject) {
+			x_predictVec.push_back(x(0));
+			y_predictVec.push_back(x(1));
+			x_measVec.push_back(z(0));
+			y_measVec.push_back(z(1));
+		}
 		//std::cout << "Z: \n" <<Z - Hx << std::endl;
 		//std::cout << "x_update: \n" << x << std::endl;
 		//std::cout << "z: \n" << Z << std::endl;
@@ -169,6 +167,10 @@ void EKF::update(const Eigen::VectorXd& z) {
 		// Update the error covariance
 		P = (I - K * JH) * P;
 	}
+}
+
+void EKF::setR(Eigen::MatrixXd R_) {
+	R = R_;
 }
 
 Eigen::Vector3d EKF::getBeaglePrediction() {
@@ -188,3 +190,26 @@ std::vector<std::vector<double>> EKF::getPlotVectors() {
 }
 
 
+double EKF::getProbability() {
+	return lambda;
+}
+
+Eigen::VectorXd EKF::getState() {
+	return x;
+}
+
+Eigen::MatrixXd EKF::getCovariance() {
+	return P;
+}
+
+void EKF::setState(Eigen::VectorXd x_mixed) {
+	x = x_mixed;
+}
+
+void EKF::setCovariance(Eigen::MatrixXd P_) {
+	P = P_;
+}
+
+void EKF::setMatchFlag(int mf) {
+	matchFlag = mf;
+}

@@ -2,7 +2,10 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-Track::Track(double range, double angle, Eigen::Vector3d beagleMeas) : detectionAbsence(0) {
+Track::Track(double range, double angle, Eigen::Vector3d beagleMeas, int objectChoice_) : 
+	detectionAbsence(0),
+	objectChoice(objectChoice_)
+{
 	range_ = range;
 	angle_ = angle;
 
@@ -11,83 +14,180 @@ Track::Track(double range, double angle, Eigen::Vector3d beagleMeas) : detection
 	x_measVec.push_back(navDet(0));
 	y_measVec.push_back(navDet(1));
 
-	//Todo - varianties tunen
-	rangeVarRadar = 0.05; 
-	angleVarRadar = 0.05;
+	//IMM parameters
+	modelNum = 4;
+	modelNumbers = { 0, 1, 2, 5 };
 
-	rangeVarCamera = 0.1;
-	angleVarCamera = 0.1;
-	varianceTimeFactor = 1.1;
+	//Set initial matrices
+	tuning();
 
-	//Radar measurement noise covariance matrix 
-	Rr = Eigen::MatrixXd(2, 2);
-	Rc = Eigen::MatrixXd(2, 2);
-	R  = Eigen::MatrixXd(2, 2);
-	//Transformation matrix
-	g = Eigen::MatrixXd(2, 2);
-
-	Rr << rangeVarRadar, 0,
-		0, angleVarRadar;
-
-	R = Rr;
-	//Target processing
 	//Initial velocity estimates [m/s]
-
-	//omega = 0;
-
 	double vInit = 6;
 	double headingInit = atan2(beagleMeas(0) - navDet(0), beagleMeas(1) - navDet(1));
-	vxInit = sin(headingInit)*vInit;
-	vyInit = cos(headingInit)*vInit;
 
 	//Kalman filter track
-	KF = std::make_unique<Kalman>(navDet, vxInit, vyInit);
+	if (objectChoice == 0)
+		KF = std::make_unique<Kalman>(navDet, vInit, headingInit, Qvec[0], Pvec[0]);
+	else if (objectChoice == 1)
+		EKF_ = std::make_unique<EKF>(navDet, vInit, headingInit, Qvec[5], Pvec[5]);
+	else
+		IMM_ = std::make_unique<IMM>(modelNum, modelNumbers, Qvec, Pvec, navDet, vInit, headingInit);
 }
+
+void Track::tuning() {
+	
+	//Model 0 - Constant velocity
+	tuningVec.push_back(Tuning({
+		{0.05, 0,
+		 0, 0.05},//Radar measurement noise covariance
+		0.1,	  //rangeVarCamera
+		0.1,      //angleVarCamera
+		1.1       //varianceTimeFactor	
+	}));
+	Pvec.push_back(Eigen::MatrixXd(4, 4));
+	Qvec.push_back(Eigen::MatrixXd(4, 4));
+	Pvec.back() << 15, 0, 0, 0,
+					0, 2, 0, 0,
+					0, 0, 15, 0,
+					0, 0, 0, 2;
+
+	Qvec.back() << 20, 0, 0, 0,
+					0, 3, 0, 0,
+					0, 0, 20, 0,
+					0, 0, 0, 3;
+
+	//Model 1 & 2 - Constant turn 30deg/s
+	tuningVec.insert(tuningVec.end(), 2, Tuning({
+		{ 0.05, 0,
+		0, 0.05 }, //Radar measurement noise covariance
+		0.1,	   //rangeVarCamera
+		0.1,       //angleVarCamera
+		1.1        //varianceTimeFactor
+	}));
+	Pvec.push_back(Eigen::MatrixXd(4, 4));
+	Qvec.push_back(Eigen::MatrixXd(4, 4));
+	Pvec.back() << 15, 0, 0, 0,
+					0, 2, 0, 0,
+					0, 0, 15, 0,
+					0, 0, 0, 2;
+
+	Qvec.back() << 20, 0, 0, 0,
+					0, 3, 0, 0,
+					0, 0, 20, 0,
+					0, 0, 0, 3;
+	Pvec[1] = Pvec.back();
+	Qvec[1] = Qvec.back();
+
+	//Model 3 & 4 - Constant turn 50deg/s
+	tuningVec.insert(tuningVec.end(), 2, Tuning({
+		{ 0.05, 0,
+		0, 0.05 }, //Radar measurement noise covariance
+		0.1,	   //rangeVarCamera
+		0.1,       //angleVarCamera
+		1.1        //varianceTimeFactor
+	}));
+	Pvec.push_back(Eigen::MatrixXd(4, 4));
+	Qvec.push_back(Eigen::MatrixXd(4, 4));
+	Pvec.back() << 15, 0, 0, 0,
+					0, 2, 0, 0,
+					0, 0, 15, 0,
+					0, 0, 0, 2;
+
+	Qvec.back() << 20, 0, 0, 0,
+					0, 3, 0, 0,
+					0, 0, 20, 0,
+					0, 0, 0, 3;
+	Pvec[3] = Pvec.back();
+	Qvec[3] = Qvec.back();
+
+	//Model 5 - EKF - Constant Velocity Constant Turn
+	tuningVec.push_back(Tuning({
+		{ 0.05, 0,
+		0, 0.05 }, //Radar measurement noise covariance
+		0.1,	   //rangeVarCamera
+		0.1,       //angleVarCamera
+		1.1        //varianceTimeFactor
+	}));
+	Pvec.push_back(Eigen::MatrixXd(5, 5));
+	Qvec.push_back(Eigen::MatrixXd(5, 5));
+	Pvec.back() <<
+		15, 0, 0, 0, 0,
+		0, 15, 0, 0, 0,
+		0, 0, 1, 0, 0,
+		0, 0, 0, 20, 0,
+		0, 0, 0, 0, 10;
+	Qvec.back() <<
+		20, 0, 0, 0, 0,
+		0, 20, 0, 0, 0,
+		0, 0, 1, 0, 0,
+		0, 0, 0, 10, 0,
+		0, 0, 0, 0, 20;
+	}
 
 void Track::run(Eigen::Vector3d _beaglePrediction) {
 	
 	
 	updateR(_beaglePrediction);
 
-	KF->setMatchFlag(matchFlag_);
-
-	//Target processing
-	//Track prediction
-	if (matchFlag_ < 2) {
-		
-		//KF gain update
-		KF->gainUpdate();
-		//Track update
-		KF->update(navDet);
-
-		KF->predict();
+	if (objectChoice == 0) {
+		KF->setMatchFlag(matchFlag_);
+		KF->compute(navDet);
+	}
+	else if (objectChoice == 1) {
+		EKF_->setMatchFlag(matchFlag_);
+		EKF_->compute(navDet);
 	}
 	else {
-		
-		KF->update(navDet);
-
-		KF->predict();
+		IMM_->setMatchFlag(matchFlag_);
+		IMM_->run(navDet);
 	}
+	
 	//Compute detection prediction by combining estimates from Beagle and Track
 	nav2body(_beaglePrediction);
 }
 
 void Track::updateR(Eigen::Vector3d _beaglePrediction) {
+	
 	g << sin(_beaglePrediction(2) + angle_), range_*cos(_beaglePrediction(2) + angle_),
 	cos(_beaglePrediction(2) + angle_), -range_*sin(_beaglePrediction(2) + angle_);
 
-	if (matchFlag_ == 0)
-		R = g*Rr*g.transpose();
-	else if (matchFlag_ == 1) {
-		Rc << rangeVarCamera*pow(varianceTimeFactor,detectionAbsence), 0, 
-			0, angleVarCamera;
-		R = g*Rc*g.transpose();
+	if (objectChoice == 0) {
+		Eigen::Matrix2d Rc, R;
+		if (matchFlag_ == 0)
+			R = g*tuningVec[0].Rr*g.transpose();
+		else if (matchFlag_ == 1) {
+			Rc << tuningVec[0].rangeVarCamera *pow(tuningVec[0].varianceTimeFactor, detectionAbsence), 0,
+				0, tuningVec[0].angleVarCamera;
+			R = g*Rc*g.transpose();
+		}
+		KF->setR(R);
 	}
-
-	KF->setR(R);
-
-	//std::cout << "g: " << g << std::endl;
-	//std::cout << "R: " << R << std::endl;
+	else if (objectChoice == 1) {
+		Eigen::Matrix2d Rc, R;
+		if (matchFlag_ == 0)
+			R = g*tuningVec[5].Rr*g.transpose();
+		else if (matchFlag_ == 1) {
+			Rc << tuningVec[5].rangeVarCamera *pow(tuningVec[5].varianceTimeFactor, detectionAbsence), 0,
+				0, tuningVec[5].angleVarCamera;
+			R = g*Rc*g.transpose();
+		}
+		EKF_->setR(R);
+	}
+	else {
+		std::vector<Eigen::MatrixXd> Rvec;
+		for (auto &&i : modelNumbers) {
+			Eigen::Matrix2d Rc, R;
+			if (matchFlag_ == 0)
+				R = g*tuningVec[i].Rr*g.transpose();
+			else if (matchFlag_ == 1) {
+				Rc << tuningVec[i].rangeVarCamera *pow(tuningVec[i].varianceTimeFactor, detectionAbsence), 0,
+					0, tuningVec[i].angleVarCamera;
+				R = g*Rc*g.transpose();
+			}
+			Rvec.push_back(R);
+		}
+		IMM_->setR(Rvec);
+	}
 }
 
 prediction Track::getPrediction() {

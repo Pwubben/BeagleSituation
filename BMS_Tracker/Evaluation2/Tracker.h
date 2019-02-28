@@ -42,6 +42,15 @@ struct matchedDetections {
 	std::vector<double> relAngle;
 };
 
+struct Tuning {
+	Eigen::Matrix2d Rr;
+
+	double rangeVarCamera;
+	double angleVarCamera;
+	double varianceTimeFactor;
+
+};
+
 class Util {
 public:
 	static double deg2Rad(const double& degrees)
@@ -71,23 +80,41 @@ public:
 
 class KalmanFilters {
 public:
-	KalmanFilters() {}
-	virtual void compute(Eigen::VectorXd z) {}
+	KalmanFilters() = default;
+	virtual ~KalmanFilters() = default;
+	virtual void compute(Eigen::VectorXd z) = 0;
+	virtual Eigen::VectorXd getState() = 0;
+	virtual Eigen::MatrixXd getCovariance() = 0;
+	virtual double getProbability() = 0;
+
+	virtual void setR(Eigen::MatrixXd R) = 0;
+	virtual void setState(Eigen::VectorXd x_mixed) = 0;
+	virtual void setCovariance(Eigen::MatrixXd P_) = 0;
 };
 
 class Kalman : public KalmanFilters {
 public:
 	Kalman() {};
-	Kalman(const Eigen::Vector2d& navdet, const double& vx, const double& vy);
-	//Kalman(const double dt, const double& x, const double& y, const double& vx, const double& vy, const double& omega, const double& omegad);
-	//void gainUpdate(const double& beta);
+	Kalman(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber = 0);
+	
+	//Kalman functions
+	void compute(Eigen::VectorXd detection) override;
 	void gainUpdate();
 	void predict();
-	void update(Eigen::Vector2d& selected_detections);
-	Eigen::Vector2d getPrediction();
-	void setMatchFlag(int mf);
+	void update(Eigen::VectorXd& selected_detections);
 
-	void setR(Eigen::MatrixXd R);
+	//Get functions
+	Eigen::MatrixXd getDynamicModel(int modelNumber);
+	Eigen::Vector2d getPrediction();
+	Eigen::VectorXd getState() override;
+	Eigen::MatrixXd getCovariance() override;
+	double getProbability() override;
+
+	//Set functions
+	void setMatchFlag(int mf);
+	void setR(Eigen::MatrixXd R) override;
+	void setState(Eigen::VectorXd x_mixed) override;
+	void setCovariance(Eigen::MatrixXd P_) override;
 
 private:
 	const double dt = 1 / double(15); //15 FPS
@@ -108,6 +135,12 @@ private:
 	Eigen::Vector2d last_prediction;
 	Eigen::Vector2d last_prediction_eigen;
 	Eigen::Vector2d last_velocity;
+
+	//IMM variables
+	std::vector<double> modelTurnRates;
+	int model;
+	double lambda;
+
 	bool init;
 };
 
@@ -116,19 +149,36 @@ public:
 	EKF() {};
 	//Beagle Constructor
 	EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXd xInit);
+	EKF(const Eigen::Vector2d & navDet, const double& v, const double& heading, const Eigen::Matrix4d & Q_, const Eigen::Matrix4d & P_, const int & modelNumber);
+
+	bool BeagleObject = false;
+
+	//Kalman functions
 	void compute(Eigen::Vector2d detection, double dt);
-	void compute(Eigen::VectorXd detection);
-	void updateQ(double dt);
+	void compute(Eigen::VectorXd detection) override;
 	void updateJA(double dt);
 	void predict();
 	void update(const Eigen::VectorXd& Z);
+
+	//Get Functions
 	Eigen::Vector3d getBeaglePrediction(); 
 	std::vector<std::vector<double>> getPlotVectors();
+	Eigen::VectorXd getState() override;
+	Eigen::MatrixXd getCovariance() override;
+	double getProbability() override;
+
+	//Set Functions
+	void setState(Eigen::VectorXd x_mixed) override;
+	void setCovariance(Eigen::MatrixXd P_) override;
+	void setMatchFlag(int mf);
+	void setR(Eigen::MatrixXd R) override;
 
 private:
 	bool init;
 	const int n = 5; // Number of states
 	double dt; //Sample time
+
+	int matchFlag;
 
 	double sGPS;
 	double sCourse;
@@ -146,7 +196,7 @@ private:
 	std::vector<double> x_predictVec;
 	std::vector<double> y_predictVec;
 	
-	Eigen::MatrixXd P; // initial covaraince/uncertainity in states
+	Eigen::MatrixXd P; // initial covariance/uncertainity in states
 	Eigen::MatrixXd Q; // process noise covariance
 	Eigen::MatrixXd JH; // measurment jacobian
 	Eigen::MatrixXd R; // measurement noise covariance
@@ -156,25 +206,62 @@ private:
 	Eigen::MatrixXd K; // Kalman Gain
 	Eigen::VectorXd Hx; // Measurement vector
 	Eigen::VectorXd x; // State - x y heading velocity yaw_rat long_acceleration
+
+	//IMM variables
+	double lambda;
 };
 
 
 class IMM {
 public:
-	IMM();
-	~IMM();
+	IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vx, const double& vy);
 
+	void run(Eigen::VectorXd z);
+	void stateInteraction();
+	void modelProbabilityUpdate();
+	void stateEstimateCombination();
+
+	//Set functions
+	void setStateTransitionProbability(Eigen::MatrixXd stateTransitionProb);
+	void setR(std::vector<Eigen::MatrixXd> Rvec_);
+	void setMatchFlag(int mf);
 
 private:
 	std::vector<std::unique_ptr<KalmanFilters>> filters;
+	std::vector<Eigen::MatrixXd> dynamicModels;
+
+	init = true;
+	double numStates = 5;
+	const double dt = 1 / double(15);
+	int matchFlag;
+	
+	//Kalman variables
+	std::vector<Eigen::MatrixXd> Rvec;
+
+	//State interaction variables
+	Eigen::MatrixXd x_model;
+	std::vector<Eigen::MatrixXd> P_model;
+	Eigen::VectorXd x_mixed;
+	std::vector<Eigen::MatrixXd> P_mixed;
+	Eigen::MatrixXd mu_tilde;
+	Eigen::MatrixXd stateTransitionProb;
+
+	//Model probability update
+	Eigen::VectorXd lambda; 
+	Eigen::VectorXd mu_hat;
+
+	//State estimate combination
+	Eigen::VectorXd x;
+	Eigen::MatrixXd P;
 };
 
 
 class Track {
 public:
-	Track(double range, double angle, Eigen::Vector3d beagleMeas); 
+	Track(double range, double angle, Eigen::Vector3d beagleMeas, int objectChoice_);
 
 	void run(Eigen::Vector3d _beaglePrediction);
+	void tuning();
 	void updateR(Eigen::Vector3d _beaglePrediction);
 	struct prediction getPrediction(); // based on protected values
 	double getDetection();
@@ -188,13 +275,21 @@ public:
 	std::vector<std::vector<double>> getPlotVectors();
 protected:
 	std::unique_ptr<Kalman> KF;
+	std::unique_ptr<EKF> EKF_;
+	std::unique_ptr<IMM> IMM_;
+
+	int objectChoice;
+	int modelNum;
+	std::vector<int> modelNumbers;
 
 	// Initialization
 	double vxInit;
 	double vyInit;
-	Eigen::MatrixXd R;
-	Eigen::MatrixXd Rr;
-	Eigen::MatrixXd Rc;
+
+	std::vector<Tuning> tuningVec;
+	std::vector<Eigen::MatrixXd> Pvec;
+	std::vector<Eigen::MatrixXd> Qvec;
+
 	Eigen::MatrixXd g;
 	double rangeVarRadar;
 	double angleVarRadar;

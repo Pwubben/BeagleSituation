@@ -200,7 +200,7 @@ double IMUData(std::string s, std::string d) {
 	std::ofstream myfile(d, std::ofstream::out | std::ofstream::trunc);
 
 	for (int i = 0; i < ROTvec.size(); i++) {
-		myfile << latvec[i] << "," << lonvec[i] << "," << HDTvec[i] << "," << ROTvec[i] << std::endl;
+		myfile << latvec_ret1[i] << "," << lonvec_ret1[i] << "," << HDTvec_ret1[i] << "," << ROTvec_ret1[i] << std::endl;
 	}
 	myfile.close();
 	double vidSize = lonvec.size();
