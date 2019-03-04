@@ -14,6 +14,7 @@
 struct detection {
 	std::vector<double> radarRange;
 	std::vector<double> radarAngle;
+	std::vector<double> radarVel;
 	std::vector<double> cameraAngle;
 };
 
@@ -40,6 +41,7 @@ struct EKFParams {
 struct matchedDetections {
 	std::vector<double> relRange;
 	std::vector<double> relAngle;
+	std::vector<double> relVel;
 };
 
 struct Tuning {
@@ -83,7 +85,7 @@ class KalmanFilters {
 public:
 	KalmanFilters() = default;
 	virtual ~KalmanFilters() = default;
-	virtual void compute(Eigen::VectorXd z) = 0;
+	virtual void compute(Eigen::VectorXd z, double radVel_ = 0, double angle_ = 0) = 0;
 	virtual Eigen::VectorXd getState() = 0;
 	virtual Eigen::MatrixXd getCovariance() = 0;
 	virtual double getProbability() = 0;
@@ -100,7 +102,7 @@ public:
 	Kalman(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber = 0);
 	
 	//Kalman functions
-	void compute(Eigen::VectorXd detection) override;
+	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0) override;
 	void gainUpdate();
 	void predict();
 	void update(Eigen::VectorXd& selected_detections);
@@ -141,7 +143,7 @@ private:
 	//IMM variables
 	std::vector<double> modelTurnRates;
 	int model;
-	double lambda;
+	double lambda = 1;
 
 	bool init;
 };
@@ -157,14 +159,16 @@ public:
 
 	//Kalman functions
 	void compute(Eigen::Vector2d detection, double dt);
-	void compute(Eigen::VectorXd detection) override;
+	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0) override;
 	void updateJA(double dt);
 	void predict();
-	void update(const Eigen::VectorXd& Z);
+	void update(const Eigen::VectorXd& Z, double angle_ = 0);
+
+	double modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::VectorXd & z);
 
 	//Get Functions
 	Eigen::Vector2d getPrediction();
-	Eigen::Vector3d getBeaglePrediction(); 
+	Eigen::Vector4d getBeaglePrediction(); 
 	std::vector<std::vector<double>> getPlotVectors();
 	Eigen::VectorXd getState() override;
 	Eigen::MatrixXd getCovariance() override;
@@ -211,7 +215,7 @@ private:
 	Eigen::VectorXd x; // State - x y heading velocity yaw_rat long_acceleration
 
 	//IMM variables
-	double lambda;
+	double lambda = 1;
 };
 
 
@@ -219,7 +223,7 @@ class IMM {
 public:
 	IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vInit, const double& headingInit);
 
-	void run(Eigen::VectorXd z);
+	void run(Eigen::VectorXd z, double radVel, double angle_);
 	void stateInteraction();
 	void modelProbabilityUpdate();
 	void stateEstimateCombination();
@@ -264,16 +268,16 @@ private:
 
 class Track {
 public:
-	Track(double range, double angle, Eigen::Vector3d beagleMeas, int objectChoice_);
+	Track(double range, double angle, const double& velocity, Eigen::Vector4d beagleMeas, int objectChoice_);
 
 	void run(Eigen::Vector3d _beaglePrediction);
 	void tuning();
 	void updateR(Eigen::Vector3d _beaglePrediction);
 	struct prediction getPrediction(); // based on protected values
 	double getDetection();
-	void setDetection(const double& range, const double& angle, Eigen::Vector3d beagleMeas, int matchFlag);
+	void setDetection(const double& range, const double& angle, const double& velocity, Eigen::Vector4d beagleMeas, int matchFlag);
 
-	void body2nav(const double& range, const double& angle, Eigen::Vector3d& beagleMeas);
+	void body2nav(const double& range, const double& angle, Eigen::Vector4d& beagleMeas);
 	void nav2body(Eigen::Vector3d _beaglePrediction);
 
 	int detectionAbsence;
@@ -306,6 +310,7 @@ protected:
 	//Last detections
 	double range_;
 	double angle_;
+	double radVel_;
 	double heading;
 	int matchFlag_;
 
@@ -339,7 +344,7 @@ public:
 
 		//True radial velocity state
 		//Initiate EKF for Target
-		TargetTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
+		//TargetTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
 	}
 	~DataAss() {
 		
@@ -361,7 +366,7 @@ protected:
 	int drawCount = 0;
 	int radarCount = 0;
 	std::unique_ptr<EKF> BeagleTrack;
-	Eigen::Vector3d _beaglePrediction;
+	Eigen::Vector4d _beaglePrediction;
 	Eigen::Vector4d _beagleMeas;
 	Eigen::Vector4d _targetMeas;
 	bool beagleInit;
@@ -401,7 +406,7 @@ public:
 	std::string getFileString(std::string fileName);
 	std::vector<Eigen::Vector4d> loadBeagleData(std::string beagleFile);
 	std::vector<Eigen::Vector4d> loadTargetData(std::string targetFile);
-	std::vector<Eigen::Vector2d> loadRadarData(std::string radarFile);
+	std::vector<Eigen::Vector3d> loadRadarData(std::string radarFile);
 
 	void writeDataFile(std::vector<std::vector<Eigen::VectorXd>> stateVectors, std::string BeagleFile, std::string TargetFile);
 

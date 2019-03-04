@@ -22,7 +22,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	//Load Beagle Data
 	std::vector<Eigen::Vector4d> beagleData_ = loadBeagleData(getFileString(beagleFile));
 	std::vector<Eigen::Vector4d> targetData_ = loadTargetData(getFileString(targetFile));
-	std::vector<Eigen::Vector2d> radarData_  = loadRadarData(getFileString(radarFile));
+	std::vector<Eigen::Vector3d> radarData_  = loadRadarData(getFileString(radarFile));
 	int count = 0;
 
 	//Performance parameters
@@ -56,12 +56,14 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 				info.radarRange.clear();
 				info.radarAngle.clear();
+				info.radarVel.clear();
 				info.cameraAngle.clear();
 
 				//Radar detector
 				//radarDetection(src(radarWindow));
 				info.radarRange.push_back(radarData_[count](0));
 				info.radarAngle.push_back(radarData_[count](1));
+				info.radarVel.push_back(radarData_[count](2));
 
 				//Camera detector
 				saliencyDetection(src, max_dimension, sample_step, threshold, GT);
@@ -360,14 +362,14 @@ std::vector<Eigen::Vector4d> Detection::loadTargetData(std::string targetFile) {
 	return targetData_;
 }
 
-std::vector<Eigen::Vector2d> Detection::loadRadarData(std::string radarFile) {
-	vector<Eigen::Vector2d> radarData_;
+std::vector<Eigen::Vector3d> Detection::loadRadarData(std::string radarFile) {
+	vector<Eigen::Vector3d> radarData_;
 	ifstream file(radarFile);
 	string line;
 	while (getline(file, line))
 	{
 		//vector<int> row;
-		Eigen::Vector2d row;
+		Eigen::Vector3d row;
 		int i = 0;
 		stringstream iss(line);
 		string val;

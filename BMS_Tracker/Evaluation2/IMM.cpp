@@ -22,6 +22,8 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 	//Model probability update
 	lambda = Eigen::VectorXd(modelNum);
 	mu_hat = Eigen::VectorXd(modelNum);
+	for (int i = 0; i < mu_hat.size(); i++)
+		mu_hat(i) = 1 / double(modelNum);
 
 	//State estimate combination
 	x = Eigen::VectorXd(numStates);
@@ -37,7 +39,7 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 	}
 }
 
-void IMM::run(Eigen::VectorXd z)
+void IMM::run(Eigen::VectorXd z, double radVel, double angle_)
 {
 	if (init)
 		init = false;
@@ -54,8 +56,7 @@ void IMM::run(Eigen::VectorXd z)
 	for (int i = 0; i < filters.size(); i++) {
 		filters[i]->setMatchFlag(matchFlag);
 		filters[i]->setR(Rvec[i]);
-		filters[i]->compute(z);
-
+		filters[i]->compute(z, radVel, angle_);
 		
 		//Retrieve information from filters
 		lambda(i) = filters[i]->getProbability();

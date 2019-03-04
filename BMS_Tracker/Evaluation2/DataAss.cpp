@@ -10,22 +10,23 @@ using namespace cv;
 GnuGraph graph;
 
 void DataAss::run(const detection& info) {
-	
+
 	//Update Beagle state
-	BeagleTrack-> update(_beagleMeas);
+	BeagleTrack->update(_beagleMeas);
 	_beaglePrediction = BeagleTrack->getBeaglePrediction();
 
 	//Retrieve predictions and detections from last step
-	vector<prediction> predictionVector(tracks_.size());
-	vector<double> lastDetection(tracks_.size());
-	vector<bool> newRangeDetection(info.radarRange.size(),true);
-	
-	
+	std::vector<prediction> predictionVector(tracks_.size());
+	std::vector<double> lastDetection(tracks_.size());
+	vector<bool> newRangeDetection(info.radarRange.size(), true);
+
+
 	//std::cout << "Tracks: " << tracks_.size() << std::endl;
 
 	//Empty matched detection vector
 	detect.relRange.clear();
 	detect.relAngle.clear();
+	detect.relVel.clear();
 
 	for (int i = 0; i < tracks_.size(); i++) {//Change later to more robust form - PDA
 		predictionVector[i] = tracks_[i].getPrediction();
@@ -35,50 +36,32 @@ void DataAss::run(const detection& info) {
 		//std::pair<bool,int> result = findInVector(info.radarRange, lastDetection[i]);
 		std::pair<bool, int> result = findRangeVector(info.radarRange, lastDetection[i], 2.0);
 
-		if (result.first ) {
+		if (result.first) {
 			//Erase detection from new detection vector if it was old
 			//newRangeDetection.erase(std::remove(newRangeDetection.begin(), newRangeDetection.end(), result.second), newRangeDetection.end());//Check if this is correct one
 			newRangeDetection[result.second] = false;
 			//std::cout << tracks_[i].getDetection() << " - " << newRangeDetection[result.second] << std::endl;
 		}
-		
 	}
-
 
 	//Match radar and camera detections in case of new radar detection
 	for (int i = 0; i < newRangeDetection.size(); i++) {
 		if (newRangeDetection[i]) {
-			//std::cout << "Range: " << info.radarRange[i] << "- Angle: " << info.radarAngle[i] << std::endl;
-			//Assign radar range to matched detection slot
 			detect.relRange.push_back(info.radarRange[i]);
-			//TODO - vector subscript out of range
-			vector<double> d = distanceDet(info.cameraAngle, info.radarAngle[i]);
-			int idxMatch = min_element(d.begin(), d.end()) - d.begin();
-
-			bool camMatch = false;
-			//Match if sufficiently near - 
-			//TODO - Write Gating algorithm
-			/*if (!info.cameraAngle.empty()) {
-				if (d[idxMatch] < angleMatchThres) {
-					detect.relAngle.push_back(info.cameraAngle[idxMatch]);
-					camMatch = true;
-				}
-			}*/
-			//Otherwise match radar angle
-			if (!camMatch) 
-				detect.relAngle.push_back(info.radarAngle[i]);
+			detect.relAngle.push_back(info.radarAngle[i]);
+			detect.relVel.push_back(info.radarVel[i]);
 		}
 	}
 
-	vector<bool> unassignedDetection(detect.relAngle.size(),true);
+	vector<bool> unassignedDetection(detect.relAngle.size(), true);
 	//for (int i = 0; i < detect.relAngle.size(); i++) {
 	//	unassignedDetection.push_back(i);
 	//}
 
-	vector<int> matchFlag(tracks_.size(),-1);
-	
+	vector<int> matchFlag(tracks_.size(), -1);
+
 	radarCount++;
-	
+
 
 	//Match detection to track
 	for (int i = 0; i < tracks_.size(); i++) {
@@ -91,13 +74,13 @@ void DataAss::run(const detection& info) {
 			//Match if sufficiently near - 
 			//TODO - Write Gating algorithm
 			if (polarDist[idxDetection] < detectionMatchThres) {
-					//Match flag for kalman update
-					matchFlag[i] = 0;
-					tracks_[i].detectionAbsence = 0;
-					tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection], _beagleMeas.head(3), matchFlag[i]);
-					//unassignedDetection.erase(std::remove(unassignedDetection.begin(), unassignedDetection.end(), idxDetection), unassignedDetection.end()); //Check if correct one is erased
-					unassignedDetection[idxDetection] = false;
-			}				
+				//Match flag for kalman update
+				matchFlag[i] = 0;
+				tracks_[i].detectionAbsence = 0;
+				tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection], detect.relVel[idxDetection], _beaglePrediction, matchFlag[i]);
+				//unassignedDetection.erase(std::remove(unassignedDetection.begin(), unassignedDetection.end(), idxDetection), unassignedDetection.end()); //Check if correct one is erased
+				unassignedDetection[idxDetection] = false;
+			}
 		}
 
 
@@ -111,7 +94,7 @@ void DataAss::run(const detection& info) {
 		//		matchFlag[i] = 1;
 		//		tracks_[i].detectionAbsence++;
 		//		//Range prediction is returned as detection - Could be improved if done within tracker
-		//		tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[idxMatch], _beaglePrediction, matchFlag[i]);
+		//		tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[idxMatch], -100, _beaglePrediction, matchFlag[i]);
 		//		
 		//	}
 		//}
@@ -120,8 +103,8 @@ void DataAss::run(const detection& info) {
 		if (matchFlag[i] == -1) {
 			matchFlag[i] = 2;
 			tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
-			tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, _beagleMeas.head(3), matchFlag[i]);
-			
+			tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _beaglePrediction, matchFlag[i]);
+
 		}
 
 		//Terminate track if no radar detection has been received for too long
@@ -130,29 +113,29 @@ void DataAss::run(const detection& info) {
 	}
 
 	//For ground truth velocity
-	TargetTrack->update(_targetMeas);
+	/*TargetTrack->update(_targetMeas);
 
 	BeagleState.push_back(BeagleTrack->getState());
 	TargetState.push_back(TargetTrack->getState());
 
-	TargetTrack->compute(_targetMeas);
-	
+	TargetTrack->compute(_targetMeas);*/
+
 	//TODO Beagle KF - Obtain Beagle updates 
 	BeagleTrack->compute(_beagleMeas);
 	_beaglePrediction = BeagleTrack->getBeaglePrediction(); //This prediction is correct for the track runs, for the previously used ones might have to use updated state
 
 															//Initiate track if detection is not assigned
 	for (int i = 0; i < unassignedDetection.size(); i++) {
-		if (unassignedDetection[i] && tracks_.size() < 0) {
+		if (unassignedDetection[i] && tracks_.size() < 1) {
 			std::cout << "Range: " << detect.relRange[i] << "- Angle: " << detect.relAngle[i] << std::endl;
-			tracks_.push_back(Track(detect.relRange[i], detect.relAngle[i], _beagleMeas.head(3), objectChoice));
+			tracks_.push_back(Track(detect.relRange[i], detect.relAngle[i], detect.relVel[i], _beaglePrediction, objectChoice));
 			matchFlag.push_back(0);
 		}
 	}
 
 	//Run each track for new predictions
 	for (int i = 0; i < tracks_.size(); i++) {
-		tracks_[i].run(_beaglePrediction);
+		tracks_[i].run(_beaglePrediction.head(3));
 	}
 
 	drawCount++;
@@ -165,7 +148,7 @@ void DataAss::run(const detection& info) {
 
 void DataAss::setBeagleData(Eigen::Vector4d& beagleData_) {
 
-	
+
 
 	//Set initial Beagle position as reference point - if first
 	if (beagleInit) {
@@ -182,23 +165,23 @@ void DataAss::setBeagleData(Eigen::Vector4d& beagleData_) {
 		//Lat-lon data is close to 0 - 0, so no subtraction of initial position necessary, but is done for completeness
 		_beagleMeas << earthRadius* Util::deg2Rad(beagleData_(0)) / double(100.0) - xyInit(0), earthRadius* Util::deg2Rad(beagleData_(1)) / double(100.0) * aspectRatio - xyInit(1), Util::deg2Rad(beagleData_(2)), Util::deg2Rad(beagleData_(3));
 		//std::cout <<"LAT -LON "<< beagleData_(0) << " - " << beagleData_(1) << std::endl;
-		
+
 	}
 }
 
 void DataAss::setTargetData(Eigen::Vector4d& targetData_) {
-	
-		//Compute position of Beagle relative to first Beagle position
-		//Lat-lon data is close to 0 - 0, so no subtraction of initial position necessary, but is done for completeness
-		_targetMeas << earthRadius* Util::deg2Rad(targetData_(0)) / double(100.0) - xyInit(0), earthRadius* Util::deg2Rad(targetData_(1)) / double(100.0) * aspectRatio - xyInit(1), Util::deg2Rad(targetData_(2)), Util::deg2Rad(targetData_(3));
-		//std::cout <<"LAT -LON "<< beagleData_(0) << " - " << beagleData_(1) << std::endl;
 
-	
+	//Compute position of Beagle relative to first Beagle position
+	//Lat-lon data is close to 0 - 0, so no subtraction of initial position necessary, but is done for completeness
+	_targetMeas << earthRadius* Util::deg2Rad(targetData_(0)) / double(100.0) - xyInit(0), earthRadius* Util::deg2Rad(targetData_(1)) / double(100.0) * aspectRatio - xyInit(1), Util::deg2Rad(targetData_(2)), Util::deg2Rad(targetData_(3));
+	//std::cout <<"LAT -LON "<< beagleData_(0) << " - " << beagleData_(1) << std::endl;
+
+
 }
 
 vector<double> DataAss::distanceDet(vector<double> cdet, double rdet) {
 	vector<double> d;
-	
+
 	for (int i = 0; i < cdet.size(); i++) {
 		d.push_back(abs(cdet[i] - rdet));
 	}
@@ -207,7 +190,7 @@ vector<double> DataAss::distanceDet(vector<double> cdet, double rdet) {
 vector<double> DataAss::distancePL(matchedDetections detection, prediction prdct) {
 	vector<double> d;
 	for (int i = 0; i < detection.relRange.size(); i++) {
-		d.push_back(sqrt(pow(detection.relRange[i],2)+pow(prdct.range,2)-2* detection.relRange[i]* prdct.range*cos(Util::deg2Rad(prdct.angle-detection.relAngle[i]))));
+		d.push_back(sqrt(pow(detection.relRange[i], 2) + pow(prdct.range, 2) - 2 * detection.relRange[i] * prdct.range*cos(Util::deg2Rad(prdct.angle - detection.relAngle[i]))));
 	}
 	return d;
 }
@@ -217,31 +200,31 @@ void DataAss::drawResults() {
 	vector<vector<vector<double>>> plotVectorsTargets;
 	vector<vector<double>> plotVectorsBeagle;
 	vector<string> trackName;
-	
+
 	for (int i = 0; i < tracks_.size(); i++) {
 		plotVectorsTargets.push_back(tracks_[i].getPlotVectors());
 		std::stringstream dd;
-		dd << "Track " << i+1 << " - Measurement";
+		dd << "Track " << i + 1 << " - Measurement";
 		trackName.push_back(dd.str());
 		std::stringstream ss;
-		ss << "Track " << i+1 << " - Prediction";
+		ss << "Track " << i + 1 << " - Prediction";
 		trackName.push_back(ss.str());
 	}
 	plotVectorsBeagle = BeagleTrack->getPlotVectors();
 
-	
+
 
 	//Plot Tracks
 	for (int i = 0; i < plotVectorsTargets.size(); i++) {
-		graph.addPlot(plotVectorsTargets[i][0], plotVectorsTargets[i][1], trackName[i*2]);
-		graph.addPlot(plotVectorsTargets[i][2], plotVectorsTargets[i][3], trackName[i*2+1]);
+		graph.addPlot(plotVectorsTargets[i][0], plotVectorsTargets[i][1], trackName[i * 2]);
+		graph.addPlot(plotVectorsTargets[i][2], plotVectorsTargets[i][3], trackName[i * 2 + 1]);
 	}
 
 	//Plot Beagle Track
 	graph.addPlot(plotVectorsBeagle[0], plotVectorsBeagle[1], "Beagle Measurement");
 	graph.addPlot(plotVectorsBeagle[2], plotVectorsBeagle[3], "Beagle Prediction");
 
-	if(!plotVectorsTargets.empty())
+	if (!plotVectorsTargets.empty())
 		graph.plot();
 
 
@@ -295,7 +278,7 @@ std::pair<bool, int > DataAss::findInVector(const std::vector<double>& vecOfElem
 
 std::pair<bool, int > DataAss::findRangeVector(const std::vector<double>& vecOfElements, const double& element, const double& range)
 {
-	std::pair<bool, int > result(false,-1);
+	std::pair<bool, int > result(false, -1);
 
 	// Find given element in vector
 	for (int i = 0; i < vecOfElements.size(); i++) {

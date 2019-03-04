@@ -61,7 +61,7 @@ EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, 
 		  0.0, 1.0, 0.0, 0.0, 0.0;
 }
 
-void EKF::compute(Eigen::VectorXd z) {
+void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_) {
 	if (init) {
 		init = false;
 	}
@@ -78,7 +78,16 @@ void EKF::compute(Eigen::VectorXd z) {
 		}
 		else {
 			if (matchFlag < 2) {
-				update(z);
+				Eigen::VectorXd Z_;
+				if (matchFlag == 0) {
+					 Z_ = Eigen::VectorXd(3);
+					Z_ << z, radVel_;
+				}
+				else {
+					Z_ = Eigen::VectorXd(2);
+					Z_ << z;
+				}
+				update(Z_, angle_);
 				updateJA(dt);
 				predict();
 			}
@@ -144,7 +153,7 @@ void EKF::predict() {
 	P = JA * P * JA.transpose() + Q;
 }
 
-void EKF::update(const Eigen::VectorXd& z) {
+void EKF::update(const Eigen::VectorXd& z, double angle_) {
 
 	if (init) {
 		if (BeagleObject) {
@@ -154,10 +163,29 @@ void EKF::update(const Eigen::VectorXd& z) {
 			x(2) = z(2);
 			x(4) = z(3);
 		}
+		
 	}
 	else {
+		if (!BeagleObject) {
+			if (R.size() == 2) {
+				JH.resize(2, 5);
+				JH << 1.0, 0.0, 0.0, 0.0, 0.0,
+					0.0, 1.0, 0.0, 0.0, 0.0;
+				Hx.resize(2);
+				Hx = JH*x;
+			}
+			else {
+				JH.resize(3, 5);
+				JH << 1.0, 0.0, 0.0, 0.0, 0.0,
+					0.0, 1.0, 0.0, 0.0, 0.0,
+					0.0, 0.0, x(3)*sin(M_PI + angle_ - x(2)), cos(M_PI + angle_ - x(2)), 0.0;
+				Hx.resize(3);
+				Hx << x(0), x(1), x(3)*cos(M_PI + angle_ - x(2));
+			}
+		}
 		//std::cout << "x: " << z(0) << "- y: " << z(1) << std::endl;
-
+		if (BeagleObject)
+			Hx = JH*x;
 
 		Eigen::MatrixXd JHT = P * JH.transpose();
 		// Temporary variable for storing this intermediate value
@@ -165,14 +193,20 @@ void EKF::update(const Eigen::VectorXd& z) {
 		// Compute the Kalman gain
 		K = JHT * S.inverse();
 		
-		Eigen::VectorXd Z = z - JH*x;
+		
+		Eigen::VectorXd Z = z - Hx;
 
 		//IMM probability
-		lambda = 1 / (2 * M_PI * sqrt( S.determinant())) * std::exp(-0.5*(Z).transpose()*S.inverse()*Z);
+		if (!BeagleObject)
+			lambda = modelProbability(P, R, z);
 
-		if (BeagleObject)
-			std::cout << "x state update: \n" << x << std::endl;
+		if (!BeagleObject) {
 
+			//std::cout << "z: \n" << z.transpose() << std::endl;
+			//std::cout << "S:\n" << S << std::endl;
+			//std::cout << "Angle: \n" << angle_ << std::endl;
+			//std::cout << "x state update: \n" << x << std::endl;
+		}
 		// Update estimate
 		x = x + K * (Z);
 
@@ -193,9 +227,9 @@ void EKF::update(const Eigen::VectorXd& z) {
 		if (!BeagleObject) {
 			std::cout << "x:\n" << x << std::endl;
 			std::cout << "Z:\n" << Z << std::endl;
-			std::cout << "K:\n" << K << std::endl;
-			/*std::cout << "R:\n" << R << std::endl;
-			std::cout << "S:\n" << S << std::endl;*/
+			//std::cout << "K:\n" << K << std::endl;
+			//std::cout << "R:\n" << R << std::endl;
+			//std::cout << "S:\n" << S << std::endl;
 			//std::cout << "Lambda: " << lambda << std::endl;
 		}
 		// Update the error covariance
@@ -203,7 +237,18 @@ void EKF::update(const Eigen::VectorXd& z) {
 	}
 }
 
+double EKF::modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::VectorXd& z) {
+	Eigen::MatrixXd JHProb(2, 5);
+	JHProb << 1.0, 0.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0, 0.0;
 
+	Eigen::MatrixXd JHT = P * JHProb.transpose();
+	Eigen::MatrixXd S = JHProb * JHT + R.block(0,0,2,2);
+
+	double lambda = 1 / (2 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z.head(2)-x.head(2)).transpose()*S.inverse()*(z.head(2) - x.head(2)));
+
+	return lambda;
+}
 
 Eigen::Vector2d EKF::getPrediction() {
 
@@ -211,13 +256,14 @@ Eigen::Vector2d EKF::getPrediction() {
 }
 
 void EKF::setR(Eigen::MatrixXd R_) {
+
 	R = R_;
 }
 
-Eigen::Vector3d EKF::getBeaglePrediction() {
-	Eigen::Vector3d prediction;
+Eigen::Vector4d EKF::getBeaglePrediction() {
+	Eigen::Vector4d prediction;
 	//beaglePrediction prediction;
-	prediction << x(0), x(1), x(2);
+	prediction << x(0), x(1), x(2), x(3);
 	return prediction;
 }
 

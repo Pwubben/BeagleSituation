@@ -22,7 +22,7 @@ Kalman::Kalman(const Eigen::Vector2d& navDet, const double& v, const double& hea
 	init = true;
 }
 
-void Kalman::compute(Eigen::VectorXd detection)
+void Kalman::compute(Eigen::VectorXd detection, double radVel_, double angle_)
 {
 	//Target processing
 	//Track prediction
@@ -37,7 +37,6 @@ void Kalman::compute(Eigen::VectorXd detection)
 		predict();
 	}
 	else {
-
 		update(detection);
 
 		predict();
@@ -73,6 +72,7 @@ void Kalman::gainUpdate() {
 void Kalman::update(Eigen::VectorXd& selected_detection) {
 	if (init) {
 		x_filter << last_prediction(0), last_velocity(0), last_prediction(1), last_velocity(1);
+
 		init = false;
 	}
 	else {
@@ -84,10 +84,10 @@ void Kalman::update(Eigen::VectorXd& selected_detection) {
 
 			lambda = 1 / (2 * M_PI * sqrt( S.determinant())) * std::exp(-0.5*(Z).transpose()*S.inverse()*Z);
 			//std::cout << "Lambda: " << lambda << std::endl;
-		/*	std::cout << "XKalman: \n" << x_predict << std::endl;
+			std::cout << "XKalman: \n" << x_predict << std::endl;
 			std::cout << "ZKalman: \n" << Z << std::endl;
-			std::cout << "SKalman: \n" << S << std::endl;
-			std::cout << "KKalman: \n" << K << std::endl;*/
+			//std::cout << "SKalman: \n" << S << std::endl;
+			//std::cout << "KKalman: \n" << K << std::endl;
 			
 
 			x_filter = x_predict + K*(Z);
@@ -184,6 +184,7 @@ void Kalman::setState(Eigen::VectorXd x_mixed) {
 	yv = cos(x_mixed(2))*x_mixed(3);
 
 	x_predict << x_mixed(0), xv, x_mixed(1), yv;
+	z_predict = C*x_predict;
 }
 
 Eigen::MatrixXd Kalman::getCovariance()
