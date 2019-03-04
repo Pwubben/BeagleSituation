@@ -3,12 +3,12 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-Kalman::Kalman(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber = 0) :
+Kalman::Kalman(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber) :
 	Q(Q_),
 	P(P_),
-	A(getDynamicModel(modelNumber)),
 	model(modelNumber)
 {
+	A = getDynamicModel(modelNumber),
 	//STATE OBSERVATION MATRIX
 	C = Eigen::MatrixXd(2, 4);
 	C << 1, 0, 0, 0,
@@ -57,15 +57,18 @@ void Kalman::predict() {
 }
 
 void Kalman::gainUpdate() {
+
 	P_predict = A*P*A.transpose() + Q;
-	Eigen::MatrixXd S = (C*P_predict*C.transpose() + R);
+	S = (C*P_predict*C.transpose() + R);
 	K = P_predict*C.transpose()*S.inverse();
 	P = P_predict - K*C*P_predict; 
 
 	//std::cout << "dt: \n" << dt << std::endl;
-	//std::cout << "K: \n" << K<< std::endl;
-	//std::cout << "P: \n" << P << std::endl;
+	/*std::cout << "Kalman K: \n" << K<< std::endl;
+	std::cout << "Ppredict: \n" << P_predict << std::endl;
+	std::cout << "R: \n" << R << std::endl;*/
 }
+
 
 void Kalman::update(Eigen::VectorXd& selected_detection) {
 	if (init) {
@@ -77,17 +80,30 @@ void Kalman::update(Eigen::VectorXd& selected_detection) {
 			x_filter = x_predict;
 		else
 		{
-			x_filter = x_predict + K*(selected_detection - z_predict);
+			Eigen::VectorXd Z = selected_detection - z_predict;
+
+			lambda = 1 / (2 * M_PI * sqrt( S.determinant())) * std::exp(-0.5*(Z).transpose()*S.inverse()*Z);
+			//std::cout << "Lambda: " << lambda << std::endl;
+		/*	std::cout << "XKalman: \n" << x_predict << std::endl;
+			std::cout << "ZKalman: \n" << Z << std::endl;
+			std::cout << "SKalman: \n" << S << std::endl;
+			std::cout << "KKalman: \n" << K << std::endl;*/
+			
+
+			x_filter = x_predict + K*(Z);
 			//State update
-			//std::cout << "Error: \n" << selected_detection - z_predict << std::endl;
+			/*std::cout << " XfilterKalman: \n" << x_filter << std::endl;
+			std::cout << "LambdaKalman: \n" << lambda << "\n" << std::endl;*/
 			
 		}
 		//std::cout << "x_filter: \n" << x_filter << std::endl;
 	}
 }
 Eigen::MatrixXd Kalman::getDynamicModel(int modelNumber) {
+	//Move function to header
+
 	std::vector<Eigen::MatrixXd> models;
-	double numStates = 4;
+	int numStates = 4;
 
 	//Variable which is used to temporarily store the dynamic models
 	Eigen::MatrixXd Model(numStates, numStates);
@@ -102,7 +118,7 @@ Eigen::MatrixXd Kalman::getDynamicModel(int modelNumber) {
 	modelTurnRates.push_back(0.0);
 	//Model 1 - Constant Turn - 30 deg/s
 
-	double omega = Util::deg2Rad(30);
+	double omega = Util::deg2Rad(8);
 
 	
 	Model << 1, 1 / omega * sin(omega*dt), 0, -1 / omega * (1 - cos(omega*dt)),
@@ -113,7 +129,7 @@ Eigen::MatrixXd Kalman::getDynamicModel(int modelNumber) {
 	models.push_back(Model);
 	modelTurnRates.push_back(omega);
 
-	double omega = Util::deg2Rad(-30);
+	omega = Util::deg2Rad(-8);
 
 	Model << 1, 1 / omega * sin(omega*dt), 0, -1 / omega * (1 - cos(omega*dt)),
 		0, cos(omega*dt), 0, -sin(omega*dt),
@@ -125,7 +141,7 @@ Eigen::MatrixXd Kalman::getDynamicModel(int modelNumber) {
 
 	//Model 3 - Constant Turn - 50 deg/s
 
-	double omega = Util::deg2Rad(50);
+	 omega = Util::deg2Rad(50);
 
 	Model << 1, 1 / omega * sin(omega*dt), 0, -1 / omega * (1 - cos(omega*dt)),
 		0, cos(omega*dt), 0, -sin(omega*dt),
@@ -135,7 +151,7 @@ Eigen::MatrixXd Kalman::getDynamicModel(int modelNumber) {
 	models.push_back(Model);
 	modelTurnRates.push_back(omega);
 
-	double omega = Util::deg2Rad(-50);
+	omega = Util::deg2Rad(-50);
 
 	Model << 1, 1 / omega * sin(omega*dt), 0, -1 / omega * (1 - cos(omega*dt)),
 		0, cos(omega*dt), 0, -sin(omega*dt),
@@ -156,7 +172,7 @@ Eigen::VectorXd Kalman::getState()
 {
 	Eigen::VectorXd stateExtend(5);
 	//TODO-Check atan2 angle
-	stateExtend << x_predict(0), x_predict(2), sqrt(pow(x_predict(1), 2) + pow(x_predict(3), 2)), atan2(x_predict(1), x_predict(3)), modelTurnRates[model];
+	stateExtend << x_predict(0), x_predict(2), atan2(x_predict(1), x_predict(3)), sqrt(pow(x_predict(1), 2) + pow(x_predict(3), 2)), modelTurnRates[model];
 	return stateExtend;
 }
 
@@ -164,15 +180,18 @@ void Kalman::setState(Eigen::VectorXd x_mixed) {
 	double xv, yv;
 
 	//Convert IMM states to linear states
-	xv = sin(x_mixed(3))*x_mixed(2);
-	yv = cos(x_mixed(3))*x_mixed(2);
+	xv = sin(x_mixed(2))*x_mixed(3);
+	yv = cos(x_mixed(2))*x_mixed(3);
 
 	x_predict << x_mixed(0), xv, x_mixed(1), yv;
 }
 
 Eigen::MatrixXd Kalman::getCovariance()
 {
-	return P_predict;
+	Eigen::MatrixXd P_extended;
+	P_extended = Eigen::MatrixXd::Zero(5, 5);
+	P_extended.block(0, 0, 4, 4) = P_predict;
+	return P_extended;
 }
 
 double Kalman::getProbability()
@@ -189,5 +208,6 @@ void Kalman::setR(Eigen::MatrixXd R_) {
 }
 
 void Kalman::setCovariance(Eigen::MatrixXd P_) {
-	P = P_;
+
+	P = P_.block(0,0,4,4);
 }

@@ -8,7 +8,7 @@ using namespace std;
 
 
 
-void Detection::run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile) {
+void Detection::run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes) {
 	cout << File << endl;
 	//Load ground truth data
 	std::vector<Rect> GT;
@@ -21,6 +21,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	
 	//Load Beagle Data
 	std::vector<Eigen::Vector4d> beagleData_ = loadBeagleData(getFileString(beagleFile));
+	std::vector<Eigen::Vector4d> targetData_ = loadTargetData(getFileString(targetFile));
 	std::vector<Eigen::Vector2d> radarData_  = loadRadarData(getFileString(radarFile));
 	int count = 0;
 
@@ -66,6 +67,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 				saliencyDetection(src, max_dimension, sample_step, threshold, GT);
 		
 				data_ass_->setBeagleData(beagleData_[count]);
+				data_ass_->setTargetData(targetData_[count]);
 
 				data_ass_->run(info);
 				count++;
@@ -87,6 +89,9 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	}
 	//std::cout << "ret (python)  = " << std::endl << format(data, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
 
+	vector<vector<Eigen::VectorXd>> stateVectors = data_ass_->getStateVectors();
+
+	writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));
 }
 
 void Detection::windowDetect(cv::Mat src, double max_dimension) {
@@ -331,6 +336,30 @@ std::vector<Eigen::Vector4d> Detection::loadBeagleData(std::string beagleFile) {
 	return beagleData_;
 }
 
+std::vector<Eigen::Vector4d> Detection::loadTargetData(std::string targetFile) {
+	vector<Eigen::Vector4d> targetData_;
+	ifstream file(targetFile);
+	string line;
+	while (getline(file, line))
+	{
+		//vector<int> row;
+		Eigen::Vector4d row;
+		int i = 0;
+		stringstream iss(line);
+		string val;
+
+		// while getline gives correct result
+		while (getline(iss, val, ','))
+		{
+			row(i) = stof(val);
+			i++;
+		}
+
+		targetData_.push_back(row);
+	}
+	return targetData_;
+}
+
 std::vector<Eigen::Vector2d> Detection::loadRadarData(std::string radarFile) {
 	vector<Eigen::Vector2d> radarData_;
 	ifstream file(radarFile);
@@ -353,4 +382,21 @@ std::vector<Eigen::Vector2d> Detection::loadRadarData(std::string radarFile) {
 		radarData_.push_back(row);
 	}
 	return radarData_;
+}
+
+void Detection::writeDataFile(std::vector<std::vector<Eigen::VectorXd>> stateVectors, std::string BeagleFile, std::string TargetFile) {
+	std::ofstream beagleFile_(BeagleFile, std::ofstream::out | std::ofstream::trunc);
+	std::ofstream targetFile_(TargetFile, std::ofstream::out | std::ofstream::trunc);
+
+	for (int i = 0; i < stateVectors[0].size(); i++) {
+		beagleFile_ << stateVectors[0][i](0) << "," << stateVectors[0][i](1) << "," << stateVectors[0][i](2) << "," << stateVectors[0][i](3) << "," << stateVectors[0][i](4) << std::endl;
+	}
+	beagleFile_.close();
+
+	for (int i = 0; i < stateVectors[1].size(); i++) {
+		targetFile_ << stateVectors[1][i](0) << "," << stateVectors[1][i](1) << "," << stateVectors[1][i](2) << "," << stateVectors[1][i](3) << "," << stateVectors[1][i](4) << std::endl;
+	}
+	beagleFile_.close();
+	targetFile_.close();
+
 }

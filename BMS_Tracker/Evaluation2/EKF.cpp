@@ -4,7 +4,7 @@
 #include <cmath>
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
-
+#include <random>
 EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXd xInit)
 	: dt(1/double(15)), init(true), _max_turn_rate(max_turn_rate), _max_acceleration(max_acceleration), _max_yaw_accel(max_yaw_accel), x(xInit), BeagleObject(true)
 {
@@ -45,13 +45,16 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 		0.0, 0.0, 0.0, 0.0, 1.0;
 }
 
-EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber = 0) : 
+EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::MatrixXd& Q_, const Eigen::MatrixXd& P_, const int& modelNumber) : 
 	Q(Q_),
-	P(P_) 
+	P(P_),
+	dt(1 / double(15))
 {
+	I = Eigen::MatrixXd::Identity(n, n);
 
 	//Initial state
-	x << navDet, v, heading, 0;
+	x = Eigen::VectorXd(5);
+	x << navDet, heading, v, 0;
 
 	JH = Eigen::MatrixXd(2, 5);
 	JH << 1.0, 0.0, 0.0, 0.0, 0.0,
@@ -67,11 +70,22 @@ void EKF::compute(Eigen::VectorXd z) {
 		/********************
 		- Prediction step
 		*********************/
-	
-		//Update state and Jacobian
-		updateJA(dt);
-		//Prediction
-		predict();
+		if (BeagleObject) {
+			//Update state and Jacobian
+			updateJA(dt);
+			//Prediction
+			predict();
+		}
+		else {
+			if (matchFlag < 2) {
+				update(z);
+				updateJA(dt);
+				predict();
+			}
+			else {
+				updateJA(dt);
+			}
+		}
 	}
 }
 
@@ -89,6 +103,8 @@ void EKF::updateJA(double dt) {
 	//std::cout <<"x:\n"<< x << std::endl;
 	// Updating state equations
 	//std::cout << "dt: " << dt << std::endl;
+
+		//std::cout << "x state update1: \n" << x << std::endl;
 	if (fabs(x(4)) < 0.01) {
 		x(0) = x(0) + (x(3) * dt) * sin(x(2));
 		x(1) = x(1) + (x(3) * dt) * cos(x(2));
@@ -103,8 +119,8 @@ void EKF::updateJA(double dt) {
 		x(3) = x(3);
 		x(4) = x(4);
 	}
+	
 
-	//std::cout <<"x state update: \n"<< x << std::endl;
 	int n = x.size();
 	JA = Eigen::MatrixXd(n, n);
 	if (fabs(x(4)) < 0.01) {
@@ -148,9 +164,17 @@ void EKF::update(const Eigen::VectorXd& z) {
 		Eigen::MatrixXd S = JH * JHT + R;
 		// Compute the Kalman gain
 		K = JHT * S.inverse();
+		
+		Eigen::VectorXd Z = z - JH*x;
+
+		//IMM probability
+		lambda = 1 / (2 * M_PI * sqrt( S.determinant())) * std::exp(-0.5*(Z).transpose()*S.inverse()*Z);
+
+		if (BeagleObject)
+			std::cout << "x state update: \n" << x << std::endl;
 
 		// Update estimate
-		x = x + K * (z - JH*x);
+		x = x + K * (Z);
 
 		if (BeagleObject) {
 			x_predictVec.push_back(x(0));
@@ -159,14 +183,31 @@ void EKF::update(const Eigen::VectorXd& z) {
 			y_measVec.push_back(z(1));
 		}
 		//std::cout << "Z: \n" <<Z - Hx << std::endl;
+
 		//std::cout << "x_update: \n" << x << std::endl;
 		//std::cout << "z: \n" << Z << std::endl;
 		//std::cout << "JA: \n" << JA << std::endl;
 		//std::cout << "K:\n" << K << std::endl;
 		//std::cout << "R:\n" << R << std::endl;
+
+		if (!BeagleObject) {
+			std::cout << "x:\n" << x << std::endl;
+			std::cout << "Z:\n" << Z << std::endl;
+			std::cout << "K:\n" << K << std::endl;
+			/*std::cout << "R:\n" << R << std::endl;
+			std::cout << "S:\n" << S << std::endl;*/
+			//std::cout << "Lambda: " << lambda << std::endl;
+		}
 		// Update the error covariance
 		P = (I - K * JH) * P;
 	}
+}
+
+
+
+Eigen::Vector2d EKF::getPrediction() {
+
+	return x.head(2);
 }
 
 void EKF::setR(Eigen::MatrixXd R_) {
@@ -213,3 +254,4 @@ void EKF::setCovariance(Eigen::MatrixXd P_) {
 void EKF::setMatchFlag(int mf) {
 	matchFlag = mf;
 }
+

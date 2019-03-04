@@ -1,7 +1,37 @@
 ﻿  SynchronizeData.cpp
-  Generating code
-  118 of 360 functions (32.8%) were compiled, the rest were copied from previous compilation.
-    29 functions were new in current compilation
-    40 functions had inline decision re-evaluated but remain unchanged
-  Finished generating code
-  SynchronizeData.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\SynchronizeData\x64\Release\SynchronizeData.exe
+SynchronizeData.cpp(234): error C3867: 'std::vector<std::shared_ptr<MyBase>,std::allocator<_Ty>>::push_back': non-standard syntax; use '&' to create a pointer to member
+          with
+          [
+              _Ty=std::shared_ptr<MyBase>
+          ]
+SynchronizeData.cpp(234): error C2678: binary '<': no operator found which takes a left-hand operand of type 'overloaded-function' (or there is no acceptable conversion)
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.11.25503\include\system_error(407): note: could be 'bool std::operator <(const std::error_condition &,const std::error_condition &) noexcept'
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.11.25503\include\system_error(400): note: or       'bool std::operator <(const std::error_code &,const std::error_code &) noexcept'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/persistence.hpp(1310): note: or       'bool cv::operator <(const cv::FileNodeIterator &,const cv::FileNodeIterator &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.inl.hpp(2714): note: or       'bool cv::operator <(const cv::MatConstIterator &,const cv::MatConstIterator &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.hpp(3605): note: or       'cv::MatExpr cv::operator <(double,const cv::Mat &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.hpp(3604): note: or       'cv::MatExpr cv::operator <(const cv::Mat &,double)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.hpp(3603): note: or       'cv::MatExpr cv::operator <(const cv::Mat &,const cv::Mat &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cvstd.hpp(1018): note: or       'bool cv::operator <(const cv::String &,const char *)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cvstd.hpp(1017): note: or       'bool cv::operator <(const char *,const cv::String &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cvstd.hpp(1016): note: or       'bool cv::operator <(const cv::String &,const cv::String &)'
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.11.25503\include\memory(1597): note: or       'bool std::operator <<MyBase>(std::nullptr_t,const std::shared_ptr<MyBase> &) noexcept'
+  SynchronizeData.cpp(234): note: while trying to match the argument list '(overloaded-function, std::shared_ptr<MyBase>)'
+SynchronizeData.cpp(235): error C3867: 'std::vector<std::shared_ptr<MyBase>,std::allocator<_Ty>>::push_back': non-standard syntax; use '&' to create a pointer to member
+          with
+          [
+              _Ty=std::shared_ptr<MyBase>
+          ]
+SynchronizeData.cpp(235): error C2678: binary '<': no operator found which takes a left-hand operand of type 'overloaded-function' (or there is no acceptable conversion)
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.11.25503\include\system_error(407): note: could be 'bool std::operator <(const std::error_condition &,const std::error_condition &) noexcept'
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.11.25503\include\system_error(400): note: or       'bool std::operator <(const std::error_code &,const std::error_code &) noexcept'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/persistence.hpp(1310): note: or       'bool cv::operator <(const cv::FileNodeIterator &,const cv::FileNodeIterator &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.inl.hpp(2714): note: or       'bool cv::operator <(const cv::MatConstIterator &,const cv::MatConstIterator &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.hpp(3605): note: or       'cv::MatExpr cv::operator <(double,const cv::Mat &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.hpp(3604): note: or       'cv::MatExpr cv::operator <(const cv::Mat &,double)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/mat.hpp(3603): note: or       'cv::MatExpr cv::operator <(const cv::Mat &,const cv::Mat &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cvstd.hpp(1018): note: or       'bool cv::operator <(const cv::String &,const char *)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cvstd.hpp(1017): note: or       'bool cv::operator <(const char *,const cv::String &)'
+  C:\Users\pimwu\Downloads\opencv\build\include\opencv2/core/cvstd.hpp(1016): note: or       'bool cv::operator <(const cv::String &,const cv::String &)'
+  C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.11.25503\include\memory(1597): note: or       'bool std::operator <<MyBase>(std::nullptr_t,const std::shared_ptr<MyBase> &) noexcept'
+  SynchronizeData.cpp(235): note: while trying to match the argument list '(overloaded-function, std::shared_ptr<MyBase>)'

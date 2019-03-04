@@ -6,6 +6,8 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/flann/miniflann.hpp"
 #include "RadarScreenDetect.h"
+#include "DetectAlgorithms.h"
+#include <memory>
 
 using namespace cv;
 using namespace std;
@@ -148,3 +150,4 @@ void GroundTruth(cv::VideoCapture capture,vector<Rect> &boundRectVec) {
 	}
 
 }
+

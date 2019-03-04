@@ -43,7 +43,8 @@ struct matchedDetections {
 };
 
 struct Tuning {
-	Eigen::Matrix2d Rr;
+	double rangeVarRadar;
+	double angleVarRadar;
 
 	double rangeVarCamera;
 	double angleVarCamera;
@@ -90,6 +91,7 @@ public:
 	virtual void setR(Eigen::MatrixXd R) = 0;
 	virtual void setState(Eigen::VectorXd x_mixed) = 0;
 	virtual void setCovariance(Eigen::MatrixXd P_) = 0;
+	virtual void setMatchFlag(int mf) = 0;
 };
 
 class Kalman : public KalmanFilters {
@@ -111,7 +113,7 @@ public:
 	double getProbability() override;
 
 	//Set functions
-	void setMatchFlag(int mf);
+	void setMatchFlag(int mf) override;
 	void setR(Eigen::MatrixXd R) override;
 	void setState(Eigen::VectorXd x_mixed) override;
 	void setCovariance(Eigen::MatrixXd P_) override;
@@ -149,7 +151,7 @@ public:
 	EKF() {};
 	//Beagle Constructor
 	EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXd xInit);
-	EKF(const Eigen::Vector2d & navDet, const double& v, const double& heading, const Eigen::Matrix4d & Q_, const Eigen::Matrix4d & P_, const int & modelNumber);
+	EKF(const Eigen::Vector2d & navDet, const double& v, const double& heading, const Eigen::MatrixXd & Q_, const Eigen::MatrixXd & P_, const int & modelNumber = 0);
 
 	bool BeagleObject = false;
 
@@ -161,6 +163,7 @@ public:
 	void update(const Eigen::VectorXd& Z);
 
 	//Get Functions
+	Eigen::Vector2d getPrediction();
 	Eigen::Vector3d getBeaglePrediction(); 
 	std::vector<std::vector<double>> getPlotVectors();
 	Eigen::VectorXd getState() override;
@@ -170,7 +173,7 @@ public:
 	//Set Functions
 	void setState(Eigen::VectorXd x_mixed) override;
 	void setCovariance(Eigen::MatrixXd P_) override;
-	void setMatchFlag(int mf);
+	void setMatchFlag(int mf) override;
 	void setR(Eigen::MatrixXd R) override;
 
 private:
@@ -214,7 +217,7 @@ private:
 
 class IMM {
 public:
-	IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vx, const double& vy);
+	IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vInit, const double& headingInit);
 
 	void run(Eigen::VectorXd z);
 	void stateInteraction();
@@ -226,12 +229,15 @@ public:
 	void setR(std::vector<Eigen::MatrixXd> Rvec_);
 	void setMatchFlag(int mf);
 
+	//Get functions
+	Eigen::Vector2d getPrediction();
+
 private:
 	std::vector<std::unique_ptr<KalmanFilters>> filters;
 	std::vector<Eigen::MatrixXd> dynamicModels;
 
-	init = true;
-	double numStates = 5;
+	bool init = true;
+	int numStates = 5;
 	const double dt = 1 / double(15);
 	int matchFlag;
 	
@@ -241,7 +247,7 @@ private:
 	//State interaction variables
 	Eigen::MatrixXd x_model;
 	std::vector<Eigen::MatrixXd> P_model;
-	Eigen::VectorXd x_mixed;
+	Eigen::MatrixXd x_mixed;
 	std::vector<Eigen::MatrixXd> P_mixed;
 	Eigen::MatrixXd mu_tilde;
 	Eigen::MatrixXd stateTransitionProb;
@@ -321,7 +327,7 @@ protected:
 
 class DataAss {
 public:
-	DataAss::DataAss() : tracks_(), absenceThreshold(300) {
+	DataAss::DataAss() : tracks_(), absenceThreshold(300), objectChoice(2) {
 		//Kalman filter Beagle
 		Eigen::VectorXd xInit(5);
 		xInit << 0.0, 0.0, 0.0, 14.0, 0.0; // Initiate velocity as it is not measured
@@ -330,6 +336,10 @@ public:
 		//Initiate EKF for Beagle
 		BeagleTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
 		beagleInit = true;
+
+		//True radial velocity state
+		//Initiate EKF for Target
+		TargetTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
 	}
 	~DataAss() {
 		
@@ -337,6 +347,9 @@ public:
 	void run(const struct detection& info);
 
 	void setBeagleData(Eigen::Vector4d& beagleData_);
+	void setTargetData(Eigen::Vector4d& targetData_);
+	std::vector<std::vector<Eigen::VectorXd>> getStateVectors();
+	
 	std::pair<bool, int> findInVector(const std::vector<double>& vecOfElements, const double& element);
 	std::pair<bool, int> findRangeVector(const std::vector<double>& vecOfElements, const double& element, const double& range);
 	std::vector<double> distancePL(matchedDetections detection, prediction prdct);
@@ -350,13 +363,20 @@ protected:
 	std::unique_ptr<EKF> BeagleTrack;
 	Eigen::Vector3d _beaglePrediction;
 	Eigen::Vector4d _beagleMeas;
+	Eigen::Vector4d _targetMeas;
 	bool beagleInit;
+
+	//Ground truth radial velocity measurement
+	std::unique_ptr<EKF> TargetTrack;
+	std::vector<Eigen::VectorXd> TargetState;
+	std::vector<Eigen::VectorXd> BeagleState;
 
 	Eigen::Vector2d xyInit; //Initial position of Beagle
 	const double earthRadius = 6378137; // Meters
 	double aspectRatio;
 
 	std::vector<Track> tracks_;
+	int objectChoice;
 	double angleMatchThres = Util::deg2Rad(8);
 	double detectionMatchThres = 10000;
 	double absenceThreshold;
@@ -372,7 +392,7 @@ public:
 		data_ass_ = std::make_unique<DataAss>();
 	};
 	
-	void run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile);
+	void run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes);
 	void windowDetect(cv::Mat src, double max_dimension);
 	void radarDetection(cv::Mat src);
 	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, std::vector<cv::Rect> GT);
@@ -380,7 +400,10 @@ public:
 	std::vector<std::vector<int>> readGroundTruth(std::string fileName);
 	std::string getFileString(std::string fileName);
 	std::vector<Eigen::Vector4d> loadBeagleData(std::string beagleFile);
+	std::vector<Eigen::Vector4d> loadTargetData(std::string targetFile);
 	std::vector<Eigen::Vector2d> loadRadarData(std::string radarFile);
+
+	void writeDataFile(std::vector<std::vector<Eigen::VectorXd>> stateVectors, std::string BeagleFile, std::string TargetFile);
 
 protected:
 	bool centerInit = false;
