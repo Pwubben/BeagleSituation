@@ -16,6 +16,7 @@ struct detection {
 	std::vector<double> radarAngle;
 	std::vector<double> radarVel;
 	std::vector<double> cameraAngle;
+	std::vector<double> cameraElevation;
 };
 
 struct beagleData {
@@ -78,6 +79,51 @@ public:
 		// then divided by 100 so the value converted into 37.66 
 		double value = (int)(var * 100 + .5);
 		return (double)value / 100;
+	}
+
+	static int factorial(int n) {
+		return (n == 1 || n == 0) ? 1 : factorial(n - 1) * n;
+	}
+
+	static bool diffVec(std::vector<int> tmp) {
+		for (unsigned i = 0; i < tmp.size(); i++)
+			for (unsigned k = i + 1; k < tmp.size(); k++)
+				if (tmp[i] == tmp[k]) {
+					return false;
+				}
+		return true;
+	}
+
+	static void makeCombiUtil(std::vector<std::vector<int>>& ans, std::vector<int>& tmp, int n, int left, int k)
+	{
+		// Pushing this vector to a vector of vector 
+		if (k == 0) {
+			if(Util::diffVec(tmp))
+				ans.push_back(tmp);
+			return;
+		}
+
+		// i iterates from left to n. First time 
+		// left will be 1 
+		for (int i = left; i <= n; ++i)
+		{
+			tmp.push_back(i);
+			makeCombiUtil(ans, tmp, n, 0, k - 1);
+
+			// Popping out last inserted element 
+			// from the vector 
+			tmp.pop_back();
+		}
+	}
+
+	// Prints all combinations of size k of numbers 
+	// from 1 to n. 
+	static std::vector<std::vector<int>> makeCombi(int n, int k)
+	{
+		std::vector<std::vector<int>> ans;
+		std::vector<int> tmp;
+		Util::makeCombiUtil(ans, tmp, n, 0, k);
+		return ans;
 	}
 };
 
@@ -184,7 +230,7 @@ private:
 	bool init;
 	const int n = 5; // Number of states
 	double dt; //Sample time
-
+	int modelNum;
 	int matchFlag;
 
 	double sGPS;
@@ -335,7 +381,7 @@ public:
 	DataAss::DataAss() : tracks_(), absenceThreshold(300), objectChoice(2) {
 		//Kalman filter Beagle
 		Eigen::VectorXd xInit(5);
-		xInit << 0.0, 0.0, 0.0, 14.0, 0.0; // Initiate velocity as it is not measured
+		xInit << 0.0, 0.0, 0.0, 8.0, 0.0; // Initiate velocity as it is not measured
 		EKFParams params = { 0.1, 200.0, 0.1, 0.05, 0.05, 0.05 };
 
 		//Initiate EKF for Beagle
@@ -351,14 +397,19 @@ public:
 	};
 	void run(const struct detection& info);
 
+
 	void setBeagleData(Eigen::Vector4d& beagleData_);
 	void setTargetData(Eigen::Vector4d& targetData_);
 	std::vector<std::vector<Eigen::VectorXd>> getStateVectors();
+
+	void NearestNeighbor(detection info);
+	void GlobalNearestNeighbor(const detection& info, std::vector<prediction> predictionVector,std::vector<bool> unassignedDetection, std::vector<double> lastDetection, std::vector<int> matchFlag);
 	
 	std::pair<bool, int> findInVector(const std::vector<double>& vecOfElements, const double& element);
 	std::pair<bool, int> findRangeVector(const std::vector<double>& vecOfElements, const double& element, const double& range);
 	std::vector<double> distancePL(matchedDetections detection, prediction prdct);
-	std::vector<double> distanceDet(std::vector<double> cdet, double rdet);
+	std::vector<int> distancePL(matchedDetections detection, std::vector<prediction> prdct);
+	std::pair<std::vector<double>, std::vector<double>> distanceDet(std::vector<double> cdet, std::vector<double> hdet, double rdet);
 
 	void drawResults();
 
@@ -400,7 +451,7 @@ public:
 	void run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes);
 	void windowDetect(cv::Mat src, double max_dimension);
 	void radarDetection(cv::Mat src);
-	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, std::vector<cv::Rect> GT);
+	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, cv::Rect GT);
 
 	std::vector<std::vector<int>> readGroundTruth(std::string fileName);
 	std::string getFileString(std::string fileName);
@@ -427,7 +478,7 @@ protected:
 	bool whitening = 0;
 
 	double radarRange = 1389;
-	double FOV = Util::deg2Rad(120);
+	double FOV = Util::deg2Rad(100);
 
 	//Capture information
 	cv::Rect seaWindow;

@@ -11,7 +11,7 @@ using namespace std;
 void Detection::run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes) {
 	cout << File << endl;
 	//Load ground truth data
-	std::vector<Rect> GT;
+	Rect GT;
 	/*std::vector<std::vector<int>> GroundTruth = readGroundTruth(getFileString(groundTruthFile));
 
 	for (int s = 0; s < GroundTruth.size(); s++) {
@@ -28,7 +28,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	//Performance parameters
 	double max_dimension = 800;
 	double sample_step = 25;
-	double threshold = 6;
+	double threshold = 5.5;
 
 	bool check(false);
 	try {
@@ -58,6 +58,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 				info.radarAngle.clear();
 				info.radarVel.clear();
 				info.cameraAngle.clear();
+				info.cameraElevation.clear();
 
 				//Radar detector
 				//radarDetection(src(radarWindow));
@@ -93,7 +94,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 	vector<vector<Eigen::VectorXd>> stateVectors = data_ass_->getStateVectors();
 
-	writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));
+	//writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));
 }
 
 void Detection::windowDetect(cv::Mat src, double max_dimension) {
@@ -185,11 +186,12 @@ void Detection::radarDetection(Mat src) {
 	//return location;
 }
 
-void Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, vector<Rect> GT)
+void Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, Rect GT)
 {
 	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true)
 
 	//Crop image to separate radar and visuals
+	Mat drawGT = src.clone();
 	src = src(seaWindow);
 	//imshow("sea", src);
 	//waitKey(0);
@@ -254,6 +256,7 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 		/*if (angle < 0)
 			angle += 2.0* M_PI;*/
 		info.cameraAngle.push_back(angle);
+		info.cameraElevation.push_back(boundRect[i].y + boundRect[i].height/2);
 
 	}
 	duration = static_cast<double>(cv::getTickCount()) - duration;
@@ -271,6 +274,11 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 		rectangle(drawWindow, boundRect[i].tl(), boundRect[i].br(), color);
 	}
 
+	//color = Scalar(0, 0, 200);
+	/*cv::Point2i point(GT.x + 40, GT.y -383);
+	cout << point.x << " - " << point.y + GT.height/2 << endl;
+	rectangle(drawWindow, GT.tl()+cv::Point2i(40, - 383), GT.br() + cv::Point2i(40, -383), color);*/
+
 	imshow("Src", drawWindow);
 	waitKey(1);
 	waitKey(1);
@@ -280,8 +288,7 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 
 	//return detectionAngles;
 	//Ground truth
-	//color = Scalar(0, 0, 200);
-	//rectangle(src_cr, GT[GTcount].tl(), GT[GTcount].br(), color);
+	
 }
 
 vector<vector<int>> Detection::readGroundTruth(std::string fileName){
@@ -307,7 +314,7 @@ vector<vector<int>> Detection::readGroundTruth(std::string fileName){
 }
 
 std::string Detection::getFileString(std::string fileName) {
-	std::string path = "F:\\Nautis Run 25-2-2019\\";
+	std::string path = "F:\\Nautis Run 5-3-19\\";
 	std::stringstream ss;
 	ss << path << fileName;
 	std::string file = ss.str();

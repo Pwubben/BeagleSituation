@@ -61,28 +61,28 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	cv::VideoWriter video(name, CV_FOURCC('M', 'J', 'P', 'G'), 15, tSrc.size(), true);
 
 	int startFrame = FPS*begin+correction;
+	
 	int endFrame = end- startFrame;
-	endFrame = 1660;
+	endFrame = 1725;
 	//endFrame = round(endFrame);
 	// Cycle trough frames until video is unpaused
+
 	for (int i = 0; i < unPauseFrame; i++) {
 		src >> tSrc;
 	}
 
 	// Cycle trough frames until start frame is reached
-	for (int i = 0; i < startFrame; i++) {
-		src >> tSrc;
-	}
+	
 
 	std:: cout << "Start frame reached, starting write" << std::endl;
 
 	for (int i = 0; i < endFrame; i++) {
-	/*	if (count == 0) {
-			for (int j = 0; j < 1650; j++) {
-				src >> tSrc;
-				count++;
-			}
-		}*/
+		//if (count == 0) {
+		//	for (int j = 0; j < 1680; j++) {
+		//		src >> tSrc;
+		//		count++;
+		//	}
+		//}
 
 		src >> tSrc;
 
@@ -179,9 +179,10 @@ double IMUData(std::string s, std::string d) {
 	}
 
 	int pause = latvec.size()-1;
-	while (latvec[pause] == latvec[latvec.size()-1]) {
+	/*while (latvec[pause] == latvec[latvec.size()-1]) {
 		pause--;
-	}
+	}*/
+	
 	//unPause += 22;
 
 	std::vector<double>::const_iterator first = ROTvec.begin() + unPause;
@@ -199,7 +200,7 @@ double IMUData(std::string s, std::string d) {
 	
 	std::ofstream myfile(d, std::ofstream::out | std::ofstream::trunc);
 
-	for (int i = 0; i < ROTvec.size(); i++) {
+	for (int i = 0; i < ROTvec_ret1.size(); i++) {
 		myfile << latvec_ret1[i] << "," << lonvec_ret1[i] << "," << HDTvec_ret1[i] << "," << ROTvec_ret1[i] << std::endl;
 	}
 	myfile.close();

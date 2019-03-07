@@ -45,10 +45,11 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 		0.0, 0.0, 0.0, 0.0, 1.0;
 }
 
-EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::MatrixXd& Q_, const Eigen::MatrixXd& P_, const int& modelNumber) : 
+EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::MatrixXd& Q_, const Eigen::MatrixXd& P_, const int& modelNumber) :
 	Q(Q_),
 	P(P_),
-	dt(1 / double(15))
+	dt(1 / double(15)),
+	modelNum(modelNumber)
 {
 	I = Eigen::MatrixXd::Identity(n, n);
 
@@ -78,13 +79,13 @@ void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_) {
 		}
 		else {
 			if (matchFlag < 2) {
-				Eigen::VectorXd Z_;
+				Eigen::VectorXd Z_(3);
 				if (matchFlag == 0) {
-					 Z_ = Eigen::VectorXd(3);
+					Z_.resize(3);
 					Z_ << z, radVel_;
 				}
 				else {
-					Z_ = Eigen::VectorXd(2);
+					Z_.resize(2);
 					Z_ << z;
 				}
 				update(Z_, angle_);
@@ -98,55 +99,6 @@ void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_) {
 	}
 }
 
-
-
-void EKF::updateJA(double dt) {
-	//Update state
-	/***************
-	x(0) = x
-	x(1) = y
-	x(2) = yaw
-	x(3) = v
-	x(4) = yaw rate
-	****************/
-	//std::cout <<"x:\n"<< x << std::endl;
-	// Updating state equations
-	//std::cout << "dt: " << dt << std::endl;
-
-		//std::cout << "x state update1: \n" << x << std::endl;
-	if (fabs(x(4)) < 0.01) {
-		x(0) = x(0) + (x(3) * dt) * sin(x(2));
-		x(1) = x(1) + (x(3) * dt) * cos(x(2));
-		x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
-		x(3) = x(3);
-		x(4) = Util::sgn(x(4))*std::max(double(abs(x(4))),double(0.0001));
-	}
-	else {
-		x(0) = x(0) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
-		x(1) = x(1) + (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2)));
-		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
-		x(3) = x(3);
-		x(4) = x(4);
-	}
-	
-
-	int n = x.size();
-	JA = Eigen::MatrixXd(n, n);
-	if (fabs(x(4)) < 0.01) {
-		JA << 1.0, 0.0, x(3)*dt*cos(x(2)), dt*sin(x(2)), 0,
-			0.0, 1.0, -x(3)*dt*sin(x(2)), dt*cos(x(2)), 0,
-			0.0, 0.0, 1.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 1.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 1.0;
-	}
-	else {
-		JA << 1.0, 0.0, (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (1.0 / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2))), (x(3) / pow(x(4), 2)) * (-cos(x(4) * dt + x(2)) - x(4)*dt* sin(x(4)*dt + x(2)) + cos(x(2))),
-			0.0, 1.0, (x(3) / x(4)) * (cos(x(4) * dt + x(2)) - cos(x(2))), (1.0 / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (x(3) / pow(x(4), 2)) * (-sin(x(4) * dt + x(2)) + x(4)*dt* cos(x(4)*dt + x(2)) + sin(x(2))),
-			0.0, 0.0, 1.0, 0.0, dt,
-			0.0, 0.0, 0.0, 1.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 1.0;
-	}
-}
 
 void EKF::predict() {
 	// Prediction step
@@ -167,7 +119,7 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 	}
 	else {
 		if (!BeagleObject) {
-			if (R.size() == 2) {
+			if (R.cols() == 2) {
 				JH.resize(2, 5);
 				JH << 1.0, 0.0, 0.0, 0.0, 0.0,
 					0.0, 1.0, 0.0, 0.0, 0.0;
@@ -205,7 +157,7 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 			//std::cout << "z: \n" << z.transpose() << std::endl;
 			//std::cout << "S:\n" << S << std::endl;
 			//std::cout << "Angle: \n" << angle_ << std::endl;
-			//std::cout << "x state update: \n" << x << std::endl;
+			std::cout << "x state update: \n" << x << std::endl;
 		}
 		// Update estimate
 		x = x + K * (Z);
@@ -230,10 +182,104 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 			//std::cout << "K:\n" << K << std::endl;
 			//std::cout << "R:\n" << R << std::endl;
 			//std::cout << "S:\n" << S << std::endl;
-			//std::cout << "Lambda: " << lambda << std::endl;
+			std::cout << "Lambda: " << lambda << std::endl;
 		}
 		// Update the error covariance
 		P = (I - K * JH) * P;
+	}
+}
+
+void EKF::updateJA(double dt) {
+	//Update state
+	/***************
+	x(0) = x
+	x(1) = y
+	x(2) = yaw
+	x(3) = v
+	x(4) = yaw rate
+	****************/
+	//std::cout <<"x:\n"<< x << std::endl;
+	// Updating state equations
+	//std::cout << "dt: " << dt << std::endl;
+
+	//std::cout << "x state update1: \n" << x << std::endl;
+	if (modelNum == 5 || BeagleObject) {
+		if (fabs(x(4)) < 0.01) {
+			x(0) = x(0) + (x(3) * dt) * sin(x(2));
+			x(1) = x(1) + (x(3) * dt) * cos(x(2));
+			x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
+			x(3) = x(3);
+			x(4) = Util::sgn(x(4))*std::max(double(abs(x(4))), double(0.0001));
+		}
+		else {
+			x(0) = x(0) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
+			x(1) = x(1) + (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2)));
+			x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
+			x(3) = x(3);
+			x(4) = x(4);
+		}
+
+
+		int n = x.size();
+		JA = Eigen::MatrixXd(n, n);
+		if (fabs(x(4)) < 0.01) {
+			JA << 1.0, 0.0, x(3)*dt*cos(x(2)), dt*sin(x(2)), 0,
+				0.0, 1.0, -x(3)*dt*sin(x(2)), dt*cos(x(2)), 0,
+				0.0, 0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, 0.0, 0.0, 1.0;
+		}
+		else {
+			JA << 1.0, 0.0, (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (1.0 / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2))), (x(3) / pow(x(4), 2)) * (-cos(x(4) * dt + x(2)) - x(4)*dt* sin(x(4)*dt + x(2)) + cos(x(2))),
+				0.0, 1.0, (x(3) / x(4)) * (cos(x(4) * dt + x(2)) - cos(x(2))), (1.0 / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2))), (x(3) / pow(x(4), 2)) * (-sin(x(4) * dt + x(2)) + x(4)*dt* cos(x(4)*dt + x(2)) + sin(x(2))),
+				0.0, 0.0, 1.0, 0.0, dt,
+				0.0, 0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, 0.0, 0.0, 1.0;
+		}
+	}
+	if (modelNum == 6) {
+		x(0) = x(0) + (x(3) * dt) * sin(x(2));
+		x(1) = x(1) + (x(3) * dt) * cos(x(2));
+		x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
+		x(3) = x(3);
+		x(4) = 0;
+
+		JA = Eigen::MatrixXd(x.size() , x.size());
+		JA << 1.0, 0.0, x(3)*dt*cos(x(2)), dt*sin(x(2)), 0,
+				0.0, 1.0, -x(3)*dt*sin(x(2)), dt*cos(x(2)), 0,
+				0.0, 0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, 0.0, 0.0, 0.0;
+	}
+	if (modelNum == 7) {
+		double omega = Util::deg2Rad(-8);
+		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
+		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
+		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
+		x(3) = x(3);
+		x(4) = omega;
+
+		JA = Eigen::MatrixXd(x.size(), x.size());
+		JA << 1.0, 0.0, (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2))), (1.0 / omega) * (-cos(omega * dt + x(2)) + cos(x(2))), (x(3) / pow(omega, 2)) * (-cos(omega * dt + x(2)) - x(4)*dt* sin(omega*dt + x(2)) + cos(x(2))),
+			0.0, 1.0, (x(3) / omega) * (cos(omega * dt + x(2)) - cos(x(2))), (1.0 / omega) * (sin(omega * dt + x(2)) - sin(x(2))), (x(3) / pow(omega, 2)) * (-sin(omega * dt + x(2)) + omega*dt* cos(omega*dt + x(2)) + sin(x(2))),
+			0.0, 0.0, 1.0, 0.0, dt,
+			0.0, 0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0;
+	}
+	if (modelNum == 8) {
+		double omega = Util::deg2Rad(8);
+		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
+		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
+		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
+		x(3) = x(3);
+		x(4) = omega;
+
+		JA = Eigen::MatrixXd(x.size(), x.size());
+		JA << 1.0, 0.0, (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2))), (1.0 / omega) * (-cos(omega * dt + x(2)) + cos(x(2))), (x(3) / pow(omega, 2)) * (-cos(omega * dt + x(2)) - x(4)*dt* sin(omega*dt + x(2)) + cos(x(2))),
+			0.0, 1.0, (x(3) / omega) * (cos(omega * dt + x(2)) - cos(x(2))), (1.0 / omega) * (sin(omega * dt + x(2)) - sin(x(2))), (x(3) / pow(omega, 2)) * (-sin(omega * dt + x(2)) + omega*dt* cos(omega*dt + x(2)) + sin(x(2))),
+			0.0, 0.0, 1.0, 0.0, dt,
+			0.0, 0.0, 0.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0;
 	}
 }
 
@@ -242,10 +288,10 @@ double EKF::modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::
 	JHProb << 1.0, 0.0, 0.0, 0.0, 0.0,
 		0.0, 1.0, 0.0, 0.0, 0.0;
 
-	Eigen::MatrixXd JHT = P * JHProb.transpose();
-	Eigen::MatrixXd S = JHProb * JHT + R.block(0,0,2,2);
+	Eigen::MatrixXd JHT = P * JH.transpose();
+	Eigen::MatrixXd S = JH * JHT + R;
 
-	double lambda = 1 / (2 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z.head(2)-x.head(2)).transpose()*S.inverse()*(z.head(2) - x.head(2)));
+	double lambda = 1 / (2 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z-Hx).transpose()*S.inverse()*(z - Hx));
 
 	return lambda;
 }

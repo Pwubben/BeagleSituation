@@ -33,9 +33,9 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 	//filters.emplace_back(std::shared_ptr<KalmanFilters>(new Kalman(navDet, vInit, headingInit, Q_[1], P_[1], 1)));
 	for (auto &&No : modelNumbers) {
 		if (No < 5) 
-			filters.push_back(std::unique_ptr<KalmanFilters>(new Kalman(navDet, vInit, headingInit, Q_[No], P_[No], No)));
+			filters.push_back(std::unique_ptr<KalmanFilters>(new Kalman(navDet, vInit, headingInit, Q_[0], P_[0], No)));
 		else
-			filters.push_back(std::unique_ptr<KalmanFilters>(new EKF(navDet, vInit, headingInit, Q_[No], P_[No], No)));
+			filters.push_back(std::unique_ptr<KalmanFilters>(new EKF(navDet, vInit, headingInit, Q_[1], P_[1], No)));
 	}
 }
 

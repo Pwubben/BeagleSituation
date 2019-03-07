@@ -33,8 +33,8 @@ void DataAss::run(const detection& info) {
 		lastDetection[i] = tracks_[i].getDetection();
 
 		//Check for range update
-		//std::pair<bool,int> result = findInVector(info.radarRange, lastDetection[i]);
-		std::pair<bool, int> result = findRangeVector(info.radarRange, lastDetection[i], 2.0);
+		std::pair<bool,int> result = findInVector(info.radarRange, lastDetection[i]);
+		//std::pair<bool, int> result = findRangeVector(info.radarRange, lastDetection[i], 2.0);
 
 		if (result.first) {
 			//Erase detection from new detection vector if it was old
@@ -47,6 +47,7 @@ void DataAss::run(const detection& info) {
 	//Match radar and camera detections in case of new radar detection
 	for (int i = 0; i < newRangeDetection.size(); i++) {
 		if (newRangeDetection[i]) {
+
 			detect.relRange.push_back(info.radarRange[i]);
 			detect.relAngle.push_back(info.radarAngle[i]);
 			detect.relVel.push_back(info.radarVel[i]);
@@ -54,71 +55,20 @@ void DataAss::run(const detection& info) {
 	}
 
 	vector<bool> unassignedDetection(detect.relAngle.size(), true);
-	//for (int i = 0; i < detect.relAngle.size(); i++) {
-	//	unassignedDetection.push_back(i);
-	//}
-
 	vector<int> matchFlag(tracks_.size(), -1);
 
 	radarCount++;
 
-
-	//Match detection to track
-	for (int i = 0; i < tracks_.size(); i++) {
-		angleMatchThres = Util::deg2Rad(8 - 7 / double(800)*lastDetection[i]);
-		//std::cout << Util::rad2Deg(angleMatchThres) << std::endl;
-		//Match detection after radar update
-		if (!detect.relRange.empty()) {
-			vector<double> polarDist = distancePL(detect, predictionVector[i]);
-			int idxDetection = min_element(polarDist.begin(), polarDist.end()) - polarDist.begin();
-			//Match if sufficiently near - 
-			//TODO - Write Gating algorithm
-			if (polarDist[idxDetection] < detectionMatchThres) {
-				//Match flag for kalman update
-				matchFlag[i] = 0;
-				tracks_[i].detectionAbsence = 0;
-				tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection], detect.relVel[idxDetection], _beaglePrediction, matchFlag[i]);
-				//unassignedDetection.erase(std::remove(unassignedDetection.begin(), unassignedDetection.end(), idxDetection), unassignedDetection.end()); //Check if correct one is erased
-				unassignedDetection[idxDetection] = false;
-			}
-		}
-
-
-		//Match camera detection if no radar update or no gated match
-		//if (matchFlag[i] == -1 && !info.cameraAngle.empty()) {
-		//	vector<double> d = distanceDet(info.cameraAngle, predictionVector[i].angle);
-		//	int idxMatch = min_element(d.begin(), d.end()) - d.begin();
-		//	//Match if sufficiently near
-		//	if (d[idxMatch] < angleMatchThres) {
-		//		//Match flag for kalman update	
-		//		matchFlag[i] = 1;
-		//		tracks_[i].detectionAbsence++;
-		//		//Range prediction is returned as detection - Could be improved if done within tracker
-		//		tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[idxMatch], -100, _beaglePrediction, matchFlag[i]);
-		//		
-		//	}
-		//}
-
-		//Return prediction as measurement if no match is found
-		if (matchFlag[i] == -1) {
-			matchFlag[i] = 2;
-			tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
-			tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _beaglePrediction, matchFlag[i]);
-
-		}
-
-		//Terminate track if no radar detection has been received for too long
-		if (tracks_[i].detectionAbsence > absenceThreshold)
-			tracks_.erase(tracks_.begin() + i); //Check if correct one is erased
-	}
+	//Match detections to tracks
+	GlobalNearestNeighbor(info, predictionVector, unassignedDetection, lastDetection, matchFlag);
 
 	//For ground truth velocity
-	/*TargetTrack->update(_targetMeas);
+	TargetTrack->update(_targetMeas);
 
 	BeagleState.push_back(BeagleTrack->getState());
 	TargetState.push_back(TargetTrack->getState());
 
-	TargetTrack->compute(_targetMeas);*/
+	TargetTrack->compute(_targetMeas);
 
 	//TODO Beagle KF - Obtain Beagle updates 
 	BeagleTrack->compute(_beagleMeas);
@@ -126,7 +76,7 @@ void DataAss::run(const detection& info) {
 
 															//Initiate track if detection is not assigned
 	for (int i = 0; i < unassignedDetection.size(); i++) {
-		if (unassignedDetection[i] && tracks_.size() < 1) {
+		if (unassignedDetection[i] && tracks_.size() < 0) {
 			std::cout << "Range: " << detect.relRange[i] << "- Angle: " << detect.relAngle[i] << std::endl;
 			tracks_.push_back(Track(detect.relRange[i], detect.relAngle[i], detect.relVel[i], _beaglePrediction, objectChoice));
 			matchFlag.push_back(0);
@@ -144,6 +94,56 @@ void DataAss::run(const detection& info) {
 		drawResults();
 		drawCount = 0;
 	}
+}
+
+void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<prediction> predictionVector, std::vector<bool> unassignedDetection, std::vector<double> lastDetection, std::vector<int> matchFlag) {
+	
+	//Global nearest match solution
+	vector<int> trackMatch;
+		if (!detect.relRange.empty() && tracks_.size() > 0)
+			trackMatch = distancePL(detect, predictionVector);
+		
+		// Match radar detections if match is found
+		for (int i = 0; i < tracks_.size(); i++) {
+			if (!detect.relRange.empty() && trackMatch[i] != -1) {
+				matchFlag[i] = 0;
+				tracks_[i].detectionAbsence = 0;
+				tracks_[i].setDetection(detect.relRange[trackMatch[i]], detect.relAngle[trackMatch[i]], detect.relVel[trackMatch[i]], _beaglePrediction, matchFlag[i]);
+				unassignedDetection[trackMatch[i]] = false;
+			}
+
+			//Match camera detection if no radar update or no gated match
+			angleMatchThres = Util::deg2Rad(8 - 6 / double(800)*lastDetection[i]);
+			if (matchFlag[i] == -1 && !info.cameraAngle.empty()) {
+				/*for (int i = 0; i < info.cameraAngle.size(); i++) {
+				if (info.cameraAngle[i] < 0.097 && info.cameraAngle[i] >  0.095)
+				cv::waitKey(0);
+				}*/
+				std::pair<vector<double>, vector<double>> d = distanceDet(info.cameraAngle, info.cameraElevation, predictionVector[i].angle);
+				int idxMatch = min_element(d.second.begin(), d.second.end()) - d.second.begin();
+				//Match if sufficiently near
+				if ((d.first[idxMatch] < angleMatchThres) && (d.second[idxMatch] < angleMatchThres / 1.0e-5)) {
+					//Match flag for kalman update	
+					matchFlag[i] = 1;
+					tracks_[i].detectionAbsence++;
+					//Range prediction is returned as detection - Could be improved if done within tracker
+					tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[idxMatch], -100, _beaglePrediction, matchFlag[i]);
+				}
+			}
+
+			//Return prediction as measurement if no match is found
+			if (matchFlag[i] == -1) {
+				matchFlag[i] = 2;
+				tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
+				tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _beaglePrediction, matchFlag[i]);
+
+			}
+
+			//Terminate track if no radar detection has been received for too long
+			if (tracks_[i].detectionAbsence > absenceThreshold)
+				tracks_.erase(tracks_.begin() + i); //Check if correct one is erased
+
+		}
 }
 
 void DataAss::setBeagleData(Eigen::Vector4d& beagleData_) {
@@ -175,24 +175,80 @@ void DataAss::setTargetData(Eigen::Vector4d& targetData_) {
 	//Lat-lon data is close to 0 - 0, so no subtraction of initial position necessary, but is done for completeness
 	_targetMeas << earthRadius* Util::deg2Rad(targetData_(0)) / double(100.0) - xyInit(0), earthRadius* Util::deg2Rad(targetData_(1)) / double(100.0) * aspectRatio - xyInit(1), Util::deg2Rad(targetData_(2)), Util::deg2Rad(targetData_(3));
 	//std::cout <<"LAT -LON "<< beagleData_(0) << " - " << beagleData_(1) << std::endl;
-
-
 }
 
-vector<double> DataAss::distanceDet(vector<double> cdet, double rdet) {
+std::pair<vector<double>,vector<double>> DataAss::distanceDet(vector<double> cdet, vector<double> hdet, double rdet) {
+	std::pair<vector<double>, vector<double>> result;
 	vector<double> d;
+	double stdDev = 18;
+	double mu = 80; //Should be dependent on range
+	vector<double> lambda;
+	vector<double> probability;
 
 	for (int i = 0; i < cdet.size(); i++) {
+		lambda.push_back(1 / (sqrt(2.0 * M_PI)*stdDev)*std::exp(-0.5*pow((hdet[i] - mu) / stdDev, 2)));
 		d.push_back(abs(cdet[i] - rdet));
+		probability.push_back(std::min(d.back() / lambda.back(), 1e6));
 	}
-	return d;
+	result.first = d;
+	result.second = probability;
+	return result;
 }
+
 vector<double> DataAss::distancePL(matchedDetections detection, prediction prdct) {
 	vector<double> d;
+
 	for (int i = 0; i < detection.relRange.size(); i++) {
 		d.push_back(sqrt(pow(detection.relRange[i], 2) + pow(prdct.range, 2) - 2 * detection.relRange[i] * prdct.range*cos(Util::deg2Rad(prdct.angle - detection.relAngle[i]))));
 	}
 	return d;
+}
+
+vector<int> DataAss::distancePL(matchedDetections detection, std::vector<prediction> prdct) {
+	Eigen::MatrixXd d(detection.relRange.size(), prdct.size());
+	//vector<double> d;
+	for (int i = 0; i < prdct.size(); i++) {
+		for (int j = 0; j < detection.relRange.size(); j++) {
+			d(i, j) = sqrt(pow(detection.relRange[i], 2) + pow(prdct[i].range, 2) - 2 * detection.relRange[i] * prdct[i].range*cos(Util::deg2Rad(prdct[i].angle - detection.relAngle[i])));
+			if (d(i, j) > detectionMatchThres) 
+				d(i, j) = 1000;
+		}
+	}
+
+	vector<vector<int>> ans = Util::makeCombi(d.cols()-1, d.rows());
+	
+	for (int i = 0; i < ans.size(); i++) {
+		for (int j = 0; j < ans[i].size(); j++) {
+			cout << ans.at(i).at(j) << " ";
+		}
+		cout << endl;
+	}
+	Eigen::VectorXd n(ans.size());
+	int count = 0;
+	for (auto&& comb : ans) {
+		double sum = 0;
+		for (int i = 0; i < comb.size(); i++) {
+			sum += d(i, comb[i]);
+		}
+		n(count) = sum;
+		count++;
+	}
+
+	std::ptrdiff_t idx;
+	float minOfN = n.minCoeff(&idx);
+
+	for (int i = 0; i < ans[idx].size(); i++) {
+		if (d(i, ans[idx][i]) == 1000) {
+			ans[idx][i] = -1;
+		}
+	}
+
+	for (int j = 0; j < ans[idx].size(); j++) {
+		cout << ans[idx].at(j) << " ";
+	}
+	cout << endl;
+	
+	return ans[idx];
 }
 
 void DataAss::drawResults() {
@@ -297,3 +353,58 @@ vector<vector<Eigen::VectorXd>> DataAss::getStateVectors() {
 	stateVectors.push_back(TargetState);
 	return stateVectors;
 }
+
+//void DataAss::NearestNeighbor(detection info){
+//	for (int i = 0; i < tracks_.size(); i++) {
+//		angleMatchThres = Util::deg2Rad(8 - 6 / double(800)*lastDetection[i]);
+//
+//			//std::cout << Util::rad2Deg(angleMatchThres) << std::endl;
+//			//Match detection after radar update
+//			if (!detect.relRange.empty()) {
+//				vector<int> ans = distancePL(detect, predictionVector);
+//				vector<double> polarDist = distancePL(detect, predictionVector[i]);
+//				int idxDetection = min_element(polarDist.begin(), polarDist.end()) - polarDist.begin();
+//				//Match if sufficiently near - 
+//				//TODO - Write Gating algorithm
+//				if (polarDist[idxDetection] < detectionMatchThres) {
+//					//Match flag for kalman update
+//					matchFlag[i] = 0;
+//					tracks_[i].detectionAbsence = 0;
+//					tracks_[i].setDetection(detect.relRange[idxDetection], detect.relAngle[idxDetection], detect.relVel[idxDetection], _beaglePrediction, matchFlag[i]);
+//					//unassignedDetection.erase(std::remove(unassignedDetection.begin(), unassignedDetection.end(), idxDetection), unassignedDetection.end()); //Check if correct one is erased
+//					unassignedDetection[idxDetection] = false;
+//				}
+//			}
+//
+//
+//			//Match camera detection if no radar update or no gated match
+//			if (matchFlag[i] == -1 && !info.cameraAngle.empty()) {
+//				/*for (int i = 0; i < info.cameraAngle.size(); i++) {
+//					if (info.cameraAngle[i] < 0.097 && info.cameraAngle[i] >  0.095)
+//						cv::waitKey(0);
+//				}*/
+//				std::pair<vector<double>, vector<double>> d = distanceDet(info.cameraAngle, info.cameraElevation, predictionVector[i].angle);
+//				int idxMatch = min_element(d.second.begin(), d.second.end()) - d.second.begin();
+//				//Match if sufficiently near
+//				if ((d.first[idxMatch] < angleMatchThres) && (d.second[idxMatch] < angleMatchThres/1.0e-5)) {
+//					//Match flag for kalman update	
+//					matchFlag[i] = 1;
+//					tracks_[i].detectionAbsence++;
+//					//Range prediction is returned as detection - Could be improved if done within tracker
+//					tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[idxMatch], -100, _beaglePrediction, matchFlag[i]);	
+//				}
+//			}
+//
+//			//Return prediction as measurement if no match is found
+//			if (matchFlag[i] == -1) {
+//				matchFlag[i] = 2;
+//				tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
+//				tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _beaglePrediction, matchFlag[i]);
+//
+//			}
+//
+//			//Terminate track if no radar detection has been received for too long
+//			if (tracks_[i].detectionAbsence > absenceThreshold)
+//				tracks_.erase(tracks_.begin() + i); //Check if correct one is erased
+//		}
+//	}
