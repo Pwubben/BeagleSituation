@@ -72,6 +72,7 @@ void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_) {
 		- Prediction step
 		*********************/
 		if (BeagleObject) {
+
 			//Update state and Jacobian
 			updateJA(dt);
 			//Prediction
@@ -157,7 +158,7 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 			//std::cout << "z: \n" << z.transpose() << std::endl;
 			//std::cout << "S:\n" << S << std::endl;
 			//std::cout << "Angle: \n" << angle_ << std::endl;
-			std::cout << "x state update: \n" << x << std::endl;
+			//std::cout << "x state update: \n" << x << std::endl;
 		}
 		// Update estimate
 		x = x + K * (Z);
@@ -176,13 +177,13 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 		//std::cout << "K:\n" << K << std::endl;
 		//std::cout << "R:\n" << R << std::endl;
 
-		if (!BeagleObject) {
+		if (BeagleObject ) {
 			std::cout << "x:\n" << x << std::endl;
-			std::cout << "Z:\n" << Z << std::endl;
+			//std::cout << "Z:\n" << Z << std::endl;
 			//std::cout << "K:\n" << K << std::endl;
 			//std::cout << "R:\n" << R << std::endl;
 			//std::cout << "S:\n" << S << std::endl;
-			std::cout << "Lambda: " << lambda << std::endl;
+			//std::cout << "Lambda: " << lambda << std::endl;
 		}
 		// Update the error covariance
 		P = (I - K * JH) * P;
@@ -236,6 +237,7 @@ void EKF::updateJA(double dt) {
 				0.0, 0.0, 0.0, 1.0, 0.0,
 				0.0, 0.0, 0.0, 0.0, 1.0;
 		}
+
 	}
 	if (modelNum == 6) {
 		x(0) = x(0) + (x(3) * dt) * sin(x(2));
@@ -252,7 +254,7 @@ void EKF::updateJA(double dt) {
 				0.0, 0.0, 0.0, 0.0, 0.0;
 	}
 	if (modelNum == 7) {
-		double omega = Util::deg2Rad(-8);
+		double omega = Util::deg2Rad(-3);
 		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
 		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
 		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
@@ -267,7 +269,7 @@ void EKF::updateJA(double dt) {
 			0.0, 0.0, 0.0, 0.0, 0.0;
 	}
 	if (modelNum == 8) {
-		double omega = Util::deg2Rad(8);
+		double omega = Util::deg2Rad(3);
 		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
 		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
 		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
@@ -292,6 +294,9 @@ double EKF::modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::
 	Eigen::MatrixXd S = JH * JHT + R;
 
 	double lambda = 1 / (2 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z-Hx).transpose()*S.inverse()*(z - Hx));
+
+	if (lambda < 1e-30)
+		lambda = 1e-30;
 
 	return lambda;
 }

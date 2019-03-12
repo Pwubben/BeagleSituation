@@ -8,7 +8,9 @@ using namespace std;
 
 
 
-void Detection::run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes) {
+void Detection::run(std::string path, std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets) {
+	path_ = path;
+	
 	cout << File << endl;
 	//Load ground truth data
 	Rect GT;
@@ -22,13 +24,13 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	//Load Beagle Data
 	std::vector<Eigen::Vector4d> beagleData_ = loadBeagleData(getFileString(beagleFile));
 	std::vector<Eigen::Vector4d> targetData_ = loadTargetData(getFileString(targetFile));
-	std::vector<Eigen::Vector3d> radarData_  = loadRadarData(getFileString(radarFile));
+	std::vector<Eigen::VectorXd> radarData_  = loadRadarData(getFileString(radarFile),targets);
 	int count = 0;
 
 	//Performance parameters
 	double max_dimension = 800;
 	double sample_step = 25;
-	double threshold = 5.5;
+	FOV = Util::deg2Rad(88.4);
 
 	bool check(false);
 	try {
@@ -44,7 +46,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 			while (1) {
 				double duration = static_cast<double>(cv::getTickCount());
 				//if (count == 0) {
-				//	for (int i = 0; i < 110; i++) {
+				//	for (int i = 0; i < 1500; i++) {
 				//		capture >> src;
 				//		count++;
 				//	}
@@ -62,9 +64,11 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 				//Radar detector
 				//radarDetection(src(radarWindow));
-				info.radarRange.push_back(radarData_[count](0));
-				info.radarAngle.push_back(radarData_[count](1));
-				info.radarVel.push_back(radarData_[count](2));
+				for (int i = 0; i < radarData_[0].size(); i+=3) {
+					info.radarRange.push_back(radarData_[count](i));
+					info.radarAngle.push_back(radarData_[count](i+1));
+					info.radarVel.push_back(radarData_[count](i+2));
+				}
 
 				//Camera detector
 				saliencyDetection(src, max_dimension, sample_step, threshold, GT);
@@ -74,6 +78,7 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 
 				data_ass_->run(info);
 				count++;
+				std::cout << count << std::endl;
 				duration = static_cast<double>(cv::getTickCount()) - duration;
 				duration /= cv::getTickFrequency();
 				//std::cout << duration << std::endl;
@@ -93,8 +98,11 @@ void Detection::run(std::string File, std::string groundTruthFile, std::string b
 	//std::cout << "ret (python)  = " << std::endl << format(data, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
 
 	vector<vector<Eigen::VectorXd>> stateVectors = data_ass_->getStateVectors();
-
 	//writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));
+
+	vector<vector<vector<Eigen::VectorXd>>> resultVectors = data_ass_->getResultVectors();
+	writeResultFile(resultVectors, getFileString(resultDes));
+
 }
 
 void Detection::windowDetect(cv::Mat src, double max_dimension) {
@@ -252,7 +260,10 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 		boundRect[i].height = boundRect[i].height*(double)(src.rows / (double)(max_dimension*src.rows / src.cols));
 	
 		//detectionAngles.push_back(double((boundRect[i].x + 0.5*boundRect[i].width) * double(FOV / src.cols)));
-		angle = double((boundRect[i].x + 0.5*boundRect[i].width - 0.5*src.cols) * double(FOV / src.cols));
+		//angle = atan(double((boundRect[i].x + 0.5*boundRect[i].width - 0.5*src.cols) * double(2.0*tan(FOV/double(2.0)) / src.cols)));
+		
+		angle = atan(double((double(boundRect[i].x) + 0.5*double(boundRect[i].width) - 0.5*double(src.cols)) * double(2.0* tan(FOV / double(2.0)) / double(src.cols))));
+
 		/*if (angle < 0)
 			angle += 2.0* M_PI;*/
 		info.cameraAngle.push_back(angle);
@@ -314,9 +325,8 @@ vector<vector<int>> Detection::readGroundTruth(std::string fileName){
 }
 
 std::string Detection::getFileString(std::string fileName) {
-	std::string path = "F:\\Nautis Run 5-3-19\\";
 	std::stringstream ss;
-	ss << path << fileName;
+	ss << path_ << fileName;
 	std::string file = ss.str();
 	return file;
 }
@@ -369,14 +379,14 @@ std::vector<Eigen::Vector4d> Detection::loadTargetData(std::string targetFile) {
 	return targetData_;
 }
 
-std::vector<Eigen::Vector3d> Detection::loadRadarData(std::string radarFile) {
-	vector<Eigen::Vector3d> radarData_;
+std::vector<Eigen::VectorXd> Detection::loadRadarData(std::string radarFile, int targets) {
+	vector<Eigen::VectorXd> radarData_;
 	ifstream file(radarFile);
 	string line;
 	while (getline(file, line))
 	{
 		//vector<int> row;
-		Eigen::Vector3d row;
+		Eigen::VectorXd row(3*targets);
 		int i = 0;
 		stringstream iss(line);
 		string val;
@@ -407,5 +417,48 @@ void Detection::writeDataFile(std::vector<std::vector<Eigen::VectorXd>> stateVec
 	}
 	beagleFile_.close();
 	targetFile_.close();
+
+}
+
+void Detection::writeResultFile(std::vector<std::vector<std::vector<Eigen::VectorXd>>> resultVectors, std::string resultFile) {
+	std::ofstream resultFile_(resultFile, std::ofstream::out | std::ofstream::trunc);
+	
+	for (int i = 0; i < resultVectors[0][2].size(); i++) {
+		for (int h = 0; h < resultVectors.size(); h++) {
+			for (int d = 0; d < resultVectors[h][2][0].size(); d++) {
+				resultFile_ << resultVectors[h][2][i](d) << ",";
+			}
+			if (!resultVectors[h][3].empty()) {
+				for (int s = 0; s < resultVectors[h][3][0].size(); s++) {
+					resultFile_ << resultVectors[h][3][i](s) << ",";
+				}
+			}
+			if (!resultVectors[h][1].empty()) {
+				if (i < resultVectors[h][1].size()) {
+					for (int g = 0; g < resultVectors[h][1][0].size(); g++) {
+						resultFile_ << resultVectors[h][1][i](g) << ",";
+					}
+				}
+				else if (i >= resultVectors[h][1].size()) {
+					for (int g = 0; g < resultVectors[h][1][0].size(); g++) {
+						resultFile_ << ",";
+					}
+				}
+			}
+			if (i < resultVectors[h][0].size()) {
+				for (int j = 0; j < resultVectors[h][0][0].size(); j++) {
+					resultFile_ << resultVectors[h][0][i](j) << ",";
+				}
+			}
+			else if (i >= resultVectors[h][0].size()) {
+				for (int g = 0; g < resultVectors[h][0][0].size(); g++) {
+					resultFile_ << ",";
+				}
+			}
+		}
+		resultFile_ << std::endl;
+	}
+
+	resultFile_.close();
 
 }

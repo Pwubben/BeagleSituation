@@ -2,7 +2,7 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-Track::Track(double range, double angle, const double& velocity, Eigen::Vector4d beagleMeas, int objectChoice_) :
+Track::Track(double range, double angle, const double& velocity, Eigen::Vector4d beagleMeas, int objectChoice_, evaluationSettings settings) :
 	detectionAbsence(0),
 	objectChoice(objectChoice_),
 	matchFlag_(0)
@@ -20,8 +20,8 @@ Track::Track(double range, double angle, const double& velocity, Eigen::Vector4d
 	g = Eigen::MatrixXd(navDet.size(), navDet.size());
 
 	//IMM parameters
-	modelNum = 4;
-	modelNumbers = {5, 6, 7, 8};
+	modelNumbers = settings.dynamicModels;
+	modelNum = modelNumbers.size();
 	Eigen::MatrixXd stateTransitionProb(modelNum, modelNum);
 
 	stateTransitionProb << 0.91, 0.03, 0.03, 0.03,
@@ -29,15 +29,20 @@ Track::Track(double range, double angle, const double& velocity, Eigen::Vector4d
 							0.03, 0.03, 0.91, 0.03,
 							0.03, 0.03, 0.03, 0.91;
 
+	//Result Vector
+	Eigen::VectorXd radMeasurement(6);
+	radMeasurement << count, range_, angle_, radVel_, navDet;
+	radarMeasurement.push_back(radMeasurement);
+
 	//Set initial matrices
 	tuning();
 
 	//Initial velocity estimates [m/s]
 	double vInit;
 	if (velocity == -100 || objectChoice == 0)
-		vInit = 6;
+		vInit = 10;
 	else
-		vInit = 6;
+		vInit = 10;
 
 	double headingInit = atan2(beagleMeas(0) - navDet(0), beagleMeas(1) - navDet(1));
 
@@ -124,23 +129,23 @@ void Track::tuning() {
 	////Model 5 - EKF - Constant Velocity Constant Turn
 	tuningVec.push_back(Tuning({
 		0.001,
-		0.001,      //Radar measurement noise covariance
-		0.01,	  //rangeVarCamera
-		0.1,      //angleVarCamera
-		1.0       //varianceTimeFactor	
+		0.0001,      //Radar measurement noise covariance
+		0.001,	  //rangeVarCamera
+		0.01,      //angleVarCamera
+		1.05       //varianceTimeFactor	
 	}));
 	Pvec.push_back(Eigen::MatrixXd(5, 5));
 	Qvec.push_back(Eigen::MatrixXd(5, 5));
 	Pvec.back() <<
-		10, 0, 0, 0, 0,
-		0, 10, 0, 0, 0,
-		0, 0, 0.2, 0, 0,
+		2, 0, 0, 0, 0,
+		0, 2, 0, 0, 0,
+		0, 0, 1, 0, 0,
 		0, 0, 0, 1, 0,
 		0, 0, 0, 0, 1;
 	Qvec.back() <<
 		2, 0, 0, 0, 0,
 		0, 2, 0, 0, 0,
-		0, 0, 0.01, 0, 0,
+		0, 0, 0.05, 0, 0,
 		0, 0, 0, 1, 0,
 		0, 0, 0, 0, 5;
 	}
@@ -152,18 +157,24 @@ void Track::run(Eigen::Vector3d _beaglePrediction) {
 	if (objectChoice == 0) {
 		KF->setMatchFlag(matchFlag_);
 		KF->compute(navDet, radVel_, angle_+_beaglePrediction(2));
+		stateVector.push_back(KF->getState());
 	}
 	else if (objectChoice == 1) {
 		EKF_->setMatchFlag(matchFlag_);
 		EKF_->compute(navDet,radVel_, angle_ + _beaglePrediction(2));
+		stateVector.push_back(EKF_->getState());
 	}
 	else {
 		IMM_->setMatchFlag(matchFlag_);
 		IMM_->run(navDet,radVel_, angle_ + _beaglePrediction(2));
+		stateVector.push_back(IMM_->getState());
+		muVector.push_back(IMM_->getMu());
 	}
 	
 	//Compute detection prediction by combining estimates from Beagle and Track
 	nav2body(_beaglePrediction);
+
+	count++;
 }
 
 void Track::updateR(Eigen::Vector3d _beaglePrediction) {
@@ -250,6 +261,10 @@ double Track::getDetection() {
 	return range_;
 }
 
+double Track::getAngle() {
+	return angle_;
+}
+
 void Track::setDetection(const double& range,const double& angle, const double& velocity, Eigen::Vector4d beagleMeas, int matchFlag) {
 	
 	matchFlag_ = matchFlag;
@@ -264,14 +279,26 @@ void Track::setDetection(const double& range,const double& angle, const double& 
 	//Compute detection in navigation frame coordinates
 	body2nav(range, angle, beagleMeas); //TODO Body2Nav - Perhaps we need predictions later instead of measurements
 
+	//if (navDet(1) > 400)
+	//	//cv::waitKey(0);
+
 
 	if (matchFlag_ != 2) {
 
-		std::cout << "MatchFlag: "<< matchFlag_ <<  "- Range: " << range << "- Angle: " << angle << "navdet:" << navDet << std::endl;
-		/*if (navDet(0) > 80)
-			cv::waitKey(0);*/
+		std::cout << "MatchFlag: " << matchFlag_ << "- Range: " << range << "- Angle: " << angle << "navdet:" << navDet << std::endl;
 
-		std::cout << "BeagleMeas " << beagleMeas(0) << " - " << beagleMeas(1) << " - " << beagleMeas(2) << std::endl;
+		if (matchFlag == 0) {
+			Eigen::VectorXd radMeasurement(6);
+			radMeasurement << count, range_, angle_, radVel_, navDet;
+			radarMeasurement.push_back(radMeasurement);
+		}
+		if (matchFlag == 1) {
+			Eigen::VectorXd camMeasurement(5);
+			camMeasurement << count ,range_, angle_, navDet;
+			cameraMeasurement.push_back(camMeasurement);
+		}
+
+ 		std::cout << "BeagleMeas " << beagleMeas(0) << " - " << beagleMeas(1) << " - " << beagleMeas(2) << std::endl;
 		x_measVec.push_back(navDet(0));
 		y_measVec.push_back(navDet(1));
 
@@ -298,6 +325,9 @@ void Track::nav2body(Eigen::Vector3d _beaglePrediction) {
 	else
 		z_predict = IMM_->getPrediction();
 
+
+	std::cout << "Z_predict: " << z_predict << std::endl;
+
 	//x y prediction target relative to beagle position prediction
 	Eigen::Vector2d pdTarget = z_predict - _beaglePrediction.head(2);
 
@@ -306,16 +336,18 @@ void Track::nav2body(Eigen::Vector3d _beaglePrediction) {
 	y_predictVec.push_back(z_predict(1));
 
 	//Rotate to body frame using beagle heading prediction
-	rotMat << cos(_beaglePrediction(2)), -sin(_beaglePrediction(2)),
-		sin(_beaglePrediction(2)), cos(_beaglePrediction(2));
+	/*rotMat << cos(_beaglePrediction(2)), -sin(_beaglePrediction(2)),
+		sin(_beaglePrediction(2)), cos(_beaglePrediction(2));*/
 
 	//Compute detection in body frame coordinates
 	prediction_coord = rotMat*pdTarget;
 
 	//Compute range and angle
-	prediction_.range = sqrt(pow(prediction_coord[0], 2) + pow(prediction_coord[1], 2));
-	prediction_.angle = atan2(prediction_coord[0], prediction_coord[1]);
+	prediction_.range = sqrt(pow(pdTarget(0), 2) + pow(pdTarget(1), 2));
+	prediction_.angle = atan2(pdTarget(0), pdTarget(1)) - _beaglePrediction(2);
 
+	std::cout << "Beaglepred: " << _beaglePrediction.transpose() << std::endl;
+	std::cout <<"angle: "<< prediction_.angle << std::endl;
 }
 
 std::vector<std::vector<double>> Track::getPlotVectors() {
@@ -327,3 +359,12 @@ std::vector<std::vector<double>> Track::getPlotVectors() {
 	return plotVectors;
 }
 
+std::vector<std::vector<Eigen::VectorXd>> Track::getResultVectors() {
+	std::vector<std::vector<Eigen::VectorXd>> resultVectors;
+	resultVectors.push_back(radarMeasurement);
+	resultVectors.push_back(cameraMeasurement);
+	resultVectors.push_back(stateVector);
+	resultVectors.push_back(muVector);
+	
+	return resultVectors;
+}

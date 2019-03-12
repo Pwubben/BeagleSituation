@@ -144,6 +144,14 @@ Eigen::Vector2d IMM::getPrediction() {
 	return x.head(2);
 }
 
+Eigen::VectorXd IMM::getState() {
+	return x;
+}
+
+Eigen::VectorXd IMM::getMu() {
+	return mu_hat;
+}
+
 void IMM::setStateTransitionProbability(Eigen::MatrixXd stateTransitionProb_) {
 	stateTransitionProb = stateTransitionProb_;
 }

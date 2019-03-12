@@ -19,6 +19,13 @@ struct detection {
 	std::vector<double> cameraElevation;
 };
 
+struct evaluationSettings {
+	bool cameraUtil;
+	std::vector<int> dynamicModels;
+	int objectChoice;
+	double detectionThres;
+};
+
 struct beagleData {
 	double heading;
 	double turnRate;
@@ -104,7 +111,7 @@ public:
 		}
 
 		// i iterates from left to n. First time 
-		// left will be 1 
+		// left will be 0 
 		for (int i = left; i <= n; ++i)
 		{
 			tmp.push_back(i);
@@ -117,7 +124,7 @@ public:
 	}
 
 	// Prints all combinations of size k of numbers 
-	// from 1 to n. 
+	// from 0 to n. 
 	static std::vector<std::vector<int>> makeCombi(int n, int k)
 	{
 		std::vector<std::vector<int>> ans;
@@ -281,6 +288,8 @@ public:
 
 	//Get functions
 	Eigen::Vector2d getPrediction();
+	Eigen::VectorXd getState();
+	Eigen::VectorXd getMu();
 
 private:
 	std::vector<std::unique_ptr<KalmanFilters>> filters;
@@ -314,13 +323,14 @@ private:
 
 class Track {
 public:
-	Track(double range, double angle, const double& velocity, Eigen::Vector4d beagleMeas, int objectChoice_);
+	Track(double range, double angle, const double& velocity, Eigen::Vector4d beagleMeas, int objectChoice_, evaluationSettings settings);
 
 	void run(Eigen::Vector3d _beaglePrediction);
 	void tuning();
 	void updateR(Eigen::Vector3d _beaglePrediction);
 	struct prediction getPrediction(); // based on protected values
 	double getDetection();
+	double getAngle();
 	void setDetection(const double& range, const double& angle, const double& velocity, Eigen::Vector4d beagleMeas, int matchFlag);
 
 	void body2nav(const double& range, const double& angle, Eigen::Vector4d& beagleMeas);
@@ -329,7 +339,10 @@ public:
 	int detectionAbsence;
 
 	std::vector<std::vector<double>> getPlotVectors();
+	std::vector<std::vector<Eigen::VectorXd>> getResultVectors();
 protected:
+	double count = 0;
+
 	std::unique_ptr<Kalman> KF;
 	std::unique_ptr<EKF> EKF_;
 	std::unique_ptr<IMM> IMM_;
@@ -374,11 +387,17 @@ protected:
 	Eigen::Vector2d prediction_coord;
 	prediction prediction_;
 
+	//Results
+	std::vector<Eigen::VectorXd> radarMeasurement;
+	std::vector<Eigen::VectorXd> cameraMeasurement;
+	std::vector<Eigen::VectorXd> stateVector;
+	std::vector<Eigen::VectorXd> muVector;
+
 };
 
 class DataAss {
 public:
-	DataAss::DataAss() : tracks_(), absenceThreshold(300), objectChoice(2) {
+	DataAss::DataAss(struct evaluationSettings settings) : tracks_(), absenceThreshold(300), objectChoice(settings.objectChoice), evalSettings(settings), cameraUtil(settings.cameraUtil)  {
 		//Kalman filter Beagle
 		Eigen::VectorXd xInit(5);
 		xInit << 0.0, 0.0, 0.0, 8.0, 0.0; // Initiate velocity as it is not measured
@@ -390,7 +409,7 @@ public:
 
 		//True radial velocity state
 		//Initiate EKF for Target
-		//TargetTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
+		TargetTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
 	}
 	~DataAss() {
 		
@@ -401,16 +420,17 @@ public:
 	void setBeagleData(Eigen::Vector4d& beagleData_);
 	void setTargetData(Eigen::Vector4d& targetData_);
 	std::vector<std::vector<Eigen::VectorXd>> getStateVectors();
+	std::vector<std::vector<std::vector<Eigen::VectorXd>>> getResultVectors();
 
 	void NearestNeighbor(detection info);
-	void GlobalNearestNeighbor(const detection& info, std::vector<prediction> predictionVector,std::vector<bool> unassignedDetection, std::vector<double> lastDetection, std::vector<int> matchFlag);
+	void GlobalNearestNeighbor(const detection& info, std::vector<prediction> predictionVector,std::vector<bool>& unassignedDetection, std::vector<double> lastDetection, std::vector<int> matchFlag);
 	
 	std::pair<bool, int> findInVector(const std::vector<double>& vecOfElements, const double& element);
-	std::pair<bool, int> findRangeVector(const std::vector<double>& vecOfElements, const double& element, const double& range);
+	std::pair<bool, int> findRangeVector(const std::vector<double>& vecOfElements, const double& element, const double& range, const double& elementnr = -1);
 	std::vector<double> distancePL(matchedDetections detection, prediction prdct);
 	std::vector<int> distancePL(matchedDetections detection, std::vector<prediction> prdct);
 	std::pair<std::vector<double>, std::vector<double>> distanceDet(std::vector<double> cdet, std::vector<double> hdet, double rdet);
-
+	std::vector<int> DataAss::distanceDet(const detection& info, std::vector<prediction> rdet);
 	void drawResults();
 
 protected:
@@ -426,6 +446,11 @@ protected:
 	std::unique_ptr<EKF> TargetTrack;
 	std::vector<Eigen::VectorXd> TargetState;
 	std::vector<Eigen::VectorXd> BeagleState;
+
+	//ResultVectors
+	std::vector<std::vector<Eigen::VectorXd>> resultVector;
+	struct evaluationSettings evalSettings;
+	bool cameraUtil;
 
 	Eigen::Vector2d xyInit; //Initial position of Beagle
 	const double earthRadius = 6378137; // Meters
@@ -444,11 +469,11 @@ protected:
 
 class Detection {
 public:
-	Detection() {
-		data_ass_ = std::make_unique<DataAss>();
+	Detection(struct evaluationSettings settings) : threshold(settings.detectionThres){
+		data_ass_ = std::make_unique<DataAss>(settings);
 	};
 	
-	void run(std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes);
+	void run(std::string path, std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets);
 	void windowDetect(cv::Mat src, double max_dimension);
 	void radarDetection(cv::Mat src);
 	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, cv::Rect GT);
@@ -457,9 +482,10 @@ public:
 	std::string getFileString(std::string fileName);
 	std::vector<Eigen::Vector4d> loadBeagleData(std::string beagleFile);
 	std::vector<Eigen::Vector4d> loadTargetData(std::string targetFile);
-	std::vector<Eigen::Vector3d> loadRadarData(std::string radarFile);
+	std::vector<Eigen::VectorXd> loadRadarData(std::string radarFile,int targets);
 
 	void writeDataFile(std::vector<std::vector<Eigen::VectorXd>> stateVectors, std::string BeagleFile, std::string TargetFile);
+	void writeResultFile(std::vector<std::vector<std::vector<Eigen::VectorXd>>> stateVectors, std::string resultFile);
 
 protected:
 	bool centerInit = false;
@@ -469,6 +495,7 @@ protected:
 	struct detection info;
 
 	//Detection variables
+	double threshold;
 	int dilation_width_1 = 3;
 	int dilation_width_2 = 3;
 	double blur_std = 3;
@@ -478,7 +505,7 @@ protected:
 	bool whitening = 0;
 
 	double radarRange = 1389;
-	double FOV = Util::deg2Rad(100);
+	double FOV;
 
 	//Capture information
 	cv::Rect seaWindow;
@@ -491,6 +518,7 @@ protected:
 	cv::Size resizeDim;
 
 	//Algorithm variables
+	std::string path_;
 	double thr;
 	cv::Mat mask_trh;
 	cv::Mat masked_img;

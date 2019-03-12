@@ -118,7 +118,7 @@ Eigen::MatrixXd Kalman::getDynamicModel(int modelNumber) {
 	modelTurnRates.push_back(0.0);
 	//Model 1 - Constant Turn - 30 deg/s
 
-	double omega = Util::deg2Rad(8);
+	double omega = Util::deg2Rad(3);
 
 	
 	Model << 1, 1 / omega * sin(omega*dt), 0, -1 / omega * (1 - cos(omega*dt)),
@@ -129,7 +129,7 @@ Eigen::MatrixXd Kalman::getDynamicModel(int modelNumber) {
 	models.push_back(Model);
 	modelTurnRates.push_back(omega);
 
-	omega = Util::deg2Rad(-8);
+	omega = Util::deg2Rad(-3);
 
 	Model << 1, 1 / omega * sin(omega*dt), 0, -1 / omega * (1 - cos(omega*dt)),
 		0, cos(omega*dt), 0, -sin(omega*dt),
