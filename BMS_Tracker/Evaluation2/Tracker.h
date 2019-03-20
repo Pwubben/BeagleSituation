@@ -24,6 +24,8 @@ struct evaluationSettings {
 	std::vector<int> dynamicModels;
 	int objectChoice;
 	double detectionThres;
+	double maxDimension;
+	double varianceFactor;
 };
 
 struct beagleData {
@@ -132,13 +134,21 @@ public:
 		Util::makeCombiUtil(ans, tmp, n, 0, k);
 		return ans;
 	}
+
+	static std::string giveName(std::string video, double threshold, double imageSize) {
+		std::stringstream ss;
+		ss << video << "_" << threshold << "_" << imageSize << ".csv";
+		std::string file = ss.str();
+		return file;
+	}
+
 };
 
 class KalmanFilters {
 public:
 	KalmanFilters() = default;
 	virtual ~KalmanFilters() = default;
-	virtual void compute(Eigen::VectorXd z, double radVel_ = 0, double angle_ = 0) = 0;
+	virtual void compute(Eigen::VectorXd z, double radVel_ = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) = 0;
 	virtual Eigen::VectorXd getState() = 0;
 	virtual Eigen::MatrixXd getCovariance() = 0;
 	virtual double getProbability() = 0;
@@ -155,7 +165,7 @@ public:
 	Kalman(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber = 0);
 	
 	//Kalman functions
-	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0) override;
+	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) override;
 	void gainUpdate();
 	void predict();
 	void update(Eigen::VectorXd& selected_detections);
@@ -206,16 +216,16 @@ public:
 	EKF() {};
 	//Beagle Constructor
 	EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, double varGPS, double varYaw, double varYawRate, Eigen::VectorXd xInit);
-	EKF(const Eigen::Vector2d & navDet, const double& v, const double& heading, const Eigen::MatrixXd & Q_, const Eigen::MatrixXd & P_, const int & modelNumber = 0);
+	EKF(const Eigen::Vector2d & navDet, const double& v, const double& heading, const Eigen::MatrixXd & Q_, const Eigen::MatrixXd & P_, const int & modelNumber = 5, Eigen::Vector3d beagleMeas = { 0,0,0 });
 
 	bool BeagleObject = false;
 
 	//Kalman functions
 	void compute(Eigen::Vector2d detection, double dt);
-	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0) override;
+	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) override;
 	void updateJA(double dt);
 	void predict();
-	void update(const Eigen::VectorXd& Z, double angle_ = 0);
+	void update(const Eigen::VectorXd& Z, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0 ,0});
 
 	double modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::VectorXd & z);
 
@@ -274,9 +284,9 @@ private:
 
 class IMM {
 public:
-	IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vInit, const double& headingInit);
+	IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vInit, const double& headingInit, Eigen::Vector3d beagleMeas = { 0,0,0 });
 
-	void run(Eigen::VectorXd z, double radVel, double angle_);
+	void run(Eigen::VectorXd z, double radVel, double angle_, Eigen::VectorXd beagleMeas);
 	void stateInteraction();
 	void modelProbabilityUpdate();
 	void stateEstimateCombination();
@@ -342,7 +352,7 @@ public:
 	std::vector<std::vector<Eigen::VectorXd>> getResultVectors();
 protected:
 	double count = 0;
-
+	evaluationSettings evalSettings;
 	std::unique_ptr<Kalman> KF;
 	std::unique_ptr<EKF> EKF_;
 	std::unique_ptr<IMM> IMM_;
@@ -382,6 +392,7 @@ protected:
 	Eigen::Matrix2d rotMat;
 	Eigen::Vector2d relDet;
 	Eigen::Vector2d navDet;
+	Eigen::VectorXd navEkf;
 
 	//Prediction
 	Eigen::Vector2d prediction_coord;
@@ -469,11 +480,12 @@ protected:
 
 class Detection {
 public:
-	Detection(struct evaluationSettings settings) : threshold(settings.detectionThres){
+	Detection(struct evaluationSettings settings) : evalSettings(settings), threshold(settings.detectionThres){
 		data_ass_ = std::make_unique<DataAss>(settings);
 	};
-	
-	void run(std::string path, std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets);
+	~Detection() {}
+
+	void run(std::string path, std::string File, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets);
 	void windowDetect(cv::Mat src, double max_dimension);
 	void radarDetection(cv::Mat src);
 	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, cv::Rect GT);
@@ -493,7 +505,7 @@ protected:
 	void getInput();
 
 	struct detection info;
-
+	evaluationSettings evalSettings;
 	//Detection variables
 	double threshold;
 	int dilation_width_1 = 3;

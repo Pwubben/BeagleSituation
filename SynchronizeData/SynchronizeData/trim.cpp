@@ -34,9 +34,9 @@ void unPause(cv::VideoCapture src, int& begin) {
 		cv::cvtColor(tSrc, tSrc, CV_BGR2GRAY);
 		compFrame = tSrc(testScr);
 		frameCount++;
-		//cv::imshow("Frame1", tSrc);
-		//std::cout << frameCount << std::endl;
-		//cv::waitKey(0);
+		/*cv::imshow("Frame1", tSrc);
+		std::cout << frameCount << std::endl;
+		cv::waitKey(0);*/
 
 		/*isEqual = (cv::sum(frame1 != compFrame) == cv::Scalar(0, 0, 0));
 		std::cout << isEqual << std::endl;
@@ -63,7 +63,8 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	int startFrame = FPS*begin+correction;
 	
 	int endFrame = end- startFrame;
-	endFrame = 1725;
+	endFrame = end;
+
 	//endFrame = round(endFrame);
 	// Cycle trough frames until video is unpaused
 
@@ -77,12 +78,12 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	std:: cout << "Start frame reached, starting write" << std::endl;
 
 	for (int i = 0; i < endFrame; i++) {
-		//if (count == 0) {
-		//	for (int j = 0; j < 1680; j++) {
-		//		src >> tSrc;
-		//		count++;
-		//	}
-		//}
+		/*if (count == 0) {
+			for (int j = 0; j < 2420; j++) {
+				src >> tSrc;
+				count++;
+			}
+		}*/
 
 		src >> tSrc;
 
@@ -179,9 +180,9 @@ double IMUData(std::string s, std::string d) {
 	}
 
 	int pause = latvec.size()-1;
-	/*while (latvec[pause] == latvec[latvec.size()-1]) {
+	while (latvec[pause] == latvec[latvec.size()-1]) {
 		pause--;
-	}*/
+	}
 	
 	//unPause += 22;
 

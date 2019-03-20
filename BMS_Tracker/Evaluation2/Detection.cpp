@@ -8,7 +8,7 @@ using namespace std;
 
 
 
-void Detection::run(std::string path, std::string File, std::string groundTruthFile, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets) {
+void Detection::run(std::string path, std::string File, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets) {
 	path_ = path;
 	
 	cout << File << endl;
@@ -28,7 +28,7 @@ void Detection::run(std::string path, std::string File, std::string groundTruthF
 	int count = 0;
 
 	//Performance parameters
-	double max_dimension = 800;
+	double max_dimension = 800;// evalSettings.maxDimension;
 	double sample_step = 25;
 	FOV = Util::deg2Rad(88.4);
 
@@ -71,7 +71,8 @@ void Detection::run(std::string path, std::string File, std::string groundTruthF
 				}
 
 				//Camera detector
-				saliencyDetection(src, max_dimension, sample_step, threshold, GT);
+				if(evalSettings.cameraUtil)
+					saliencyDetection(src, max_dimension, sample_step, threshold, GT);
 		
 				data_ass_->setBeagleData(beagleData_[count]);
 				data_ass_->setTargetData(targetData_[count]);
@@ -81,7 +82,7 @@ void Detection::run(std::string path, std::string File, std::string groundTruthF
 				std::cout << count << std::endl;
 				duration = static_cast<double>(cv::getTickCount()) - duration;
 				duration /= cv::getTickFrequency();
-				//std::cout << duration << std::endl;
+				std::cout << duration << std::endl;
 
 				/*if (count == stopFrame)
 					break;*/
@@ -98,10 +99,10 @@ void Detection::run(std::string path, std::string File, std::string groundTruthF
 	//std::cout << "ret (python)  = " << std::endl << format(data, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
 
 	vector<vector<Eigen::VectorXd>> stateVectors = data_ass_->getStateVectors();
-	//writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));
+	writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));
 
-	vector<vector<vector<Eigen::VectorXd>>> resultVectors = data_ass_->getResultVectors();
-	writeResultFile(resultVectors, getFileString(resultDes));
+	/*vector<vector<vector<Eigen::VectorXd>>> resultVectors = data_ass_->getResultVectors();
+	writeResultFile(resultVectors, getFileString(resultDes));*/
 
 }
 
@@ -122,7 +123,7 @@ void Detection::windowDetect(cv::Mat src, double max_dimension) {
 	//circle(src, radarCenter, radarRadius, cv::Scalar(0, 0, 255), 3, 8, 0);
 
 	radarWindow = cv::Rect(radarCenter.x - radarRadius, max(0,radarCenter.y - radarRadius), 2 * radarRadius, 2 * radarRadius);
-	seaWindow = cv::Rect(10, radarCenter.y + radarRadius + 70, src.cols - 10, src.rows - radarCenter.y - radarRadius - 70);
+	seaWindow = cv::Rect(10,src.rows - 532, src.cols - 10, 532);
 	//cv::imshow("Hough", src);
 	//cv::waitKey(0);
 	radarCenter.x -= radarWindow.x;
@@ -178,9 +179,7 @@ void Detection::radarDetection(Mat src) {
 	if (eraseIdx > -1)
 		location.erase(location.begin() + eraseIdx);
 
-	if (location.size() > 1) {
-		std::cout << 2 << std::endl;
-	}
+	
 	for (int i = 0; i < location.size(); i++)
 	{
 		range = sqrt(pow(double(location[i].x- radarCenter.x), 2) + pow(double(radarCenter.y-location[i].y), 2)) / radarRadius * radarRange;

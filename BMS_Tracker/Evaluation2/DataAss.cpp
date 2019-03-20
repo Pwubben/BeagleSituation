@@ -77,7 +77,7 @@ void DataAss::run(const detection& info) {
 															//Initiate track if detection is not assigned
 	for (int i = 0; i < unassignedDetection.size(); i++) {
 		if (unassignedDetection[i] && tracks_.size() < 10) {
-			std::cout << "Range: " << detect.relRange[i] << "- Angle: " << detect.relAngle[i] << std::endl;
+			//std::cout << "Range: " << detect.relRange[i] << "- Angle: " << detect.relAngle[i] << std::endl;
 			tracks_.push_back(Track(detect.relRange[i], detect.relAngle[i], detect.relVel[i], _beaglePrediction, objectChoice, evalSettings));
 			matchFlag.push_back(0);
 		}
@@ -90,7 +90,7 @@ void DataAss::run(const detection& info) {
 
 	drawCount++;
 	//Draw results
-	if (drawCount > 1700) {
+	if (drawCount > 100) {
 		drawResults();
 		drawCount = 0;
 	}
@@ -101,7 +101,7 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 	//Global nearest match solution
 	vector<int> trackMatch;
 	vector<int> camMatch;
-	angleMatchThres = Util::deg2Rad(2);
+	angleMatchThres = Util::deg2Rad(3.5);
 
 		if (!detect.relRange.empty() && tracks_.size() > 0)
 			trackMatch = distancePL(detect, predictionVector);
@@ -110,6 +110,7 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 
 		// Match radar detections if match is found
 		for (int i = 0; i < tracks_.size(); i++) {
+
 			if (!detect.relRange.empty() && trackMatch[i] != -1) {
 				matchFlag[i] = 0;
 				tracks_[i].detectionAbsence = 0;
@@ -119,6 +120,9 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 
 			//Match camera detection if no radar update or no gated match
 			if (matchFlag[i] == -1 && !info.cameraAngle.empty() && camMatch[i] != -1 && cameraUtil) {
+				/*if ((info.cameraAngle[camMatch[i]] > 0.13768) && (info.cameraAngle[camMatch[i]] < 0.137682))
+					cv::waitKey(0);*/
+
 					//Match flag for kalman update	
 					matchFlag[i] = 1;
 					tracks_[i].detectionAbsence++;
@@ -143,9 +147,6 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 }
 
 void DataAss::setBeagleData(Eigen::Vector4d& beagleData_) {
-
-
-
 	//Set initial Beagle position as reference point - if first
 	if (beagleInit) {
 		//Convert lon-lat to x-y
@@ -176,18 +177,21 @@ void DataAss::setTargetData(Eigen::Vector4d& targetData_) {
 std::vector<int> DataAss::distanceDet(const detection& info, std::vector<prediction> rdet) {
 	Eigen::MatrixXd d(rdet.size(), info.cameraAngle.size());
 	double stdDev = 18;
-	double mu = 80; //Should be dependent on range
+	double mu = 105; //Should be dependent on range
 
 	for (int i = 0; i < rdet.size(); i++) {
 		for (int j = 0; j < info.cameraAngle.size(); j++) {
 			d(i, j) = std::min(abs(info.cameraAngle[j] - rdet[i].angle) * pow(rdet[i].range,1.2)/ (1 / (sqrt(2.0 * M_PI)*stdDev)*std::exp(-0.5*pow((info.cameraElevation[j] - mu) / stdDev, 2))),1e4);
 			
+			//if ((info.cameraAngle[i] > 0.137680) && (info.cameraAngle[i] < 0.137682))
+			//	cv::waitKey(0);
+
 			if (abs(info.cameraAngle[j] - rdet[i].angle) > angleMatchThres)
 				d(i, j) = 10000;
 		}
 	}
 
-	std::cout << d << std::endl;
+	//std::cout << d << std::endl;
 	vector<vector<int>> ans = Util::makeCombi(d.cols()-1, d.rows());
 	if (ans.empty()) {
 		//In case of only one detection
@@ -199,12 +203,12 @@ std::vector<int> DataAss::distanceDet(const detection& info, std::vector<predict
 		return match;
 	}
 	else {
-		for (int i = 0; i < ans.size(); i++) {
-			for (int j = 0; j < ans[i].size(); j++) {
-				cout << ans.at(i).at(j) << " ";
-			}
-			cout << endl;
-		}
+		//for (int i = 0; i < ans.size(); i++) {
+		//	for (int j = 0; j < ans[i].size(); j++) {
+		//		cout << ans.at(i).at(j) << " ";
+		//	}
+		//	cout << endl;
+		//}
 
 		Eigen::VectorXd n(ans.size());
 		int count = 0;
@@ -236,10 +240,10 @@ std::vector<int> DataAss::distanceDet(const detection& info, std::vector<predict
 				ans[idx][i] = -1;
 		}
 
-		for (int j = 0; j < ans[idx].size(); j++) {
-			cout << ans[idx].at(j) << " ";
-		}
-		cout << endl;
+		//for (int j = 0; j < ans[idx].size(); j++) {
+		//	//cout << ans[idx].at(j) << " ";
+		//}
+		//cout << endl;
 
 		return ans[idx];
 	}
@@ -282,15 +286,15 @@ vector<int> DataAss::distancePL(matchedDetections detection, std::vector<predict
 				d(i, j) = 1000;
 		}
 	}
-	std::cout << "d_rad: \n" << d << std::endl;
+	//std::cout << "d_rad: \n" << d << std::endl;
 	vector<vector<int>> ans = Util::makeCombi(d.cols()-1, d.rows());
 	
-	for (int i = 0; i < ans.size(); i++) {
+	/*for (int i = 0; i < ans.size(); i++) {
 		for (int j = 0; j < ans[i].size(); j++) {
 			cout << ans.at(i).at(j) << " ";
 		}
 		cout << endl;
-	}
+	}*/
 
 	if (ans.empty()) {
 		//In case of only one detection
@@ -300,11 +304,11 @@ vector<int> DataAss::distancePL(matchedDetections detection, std::vector<predict
 		if (d(idx, 0) != 1000)
 			match[idx] = 0;
 
-		std::cout << "MatchRad: ";
+	/*	std::cout << "MatchRad: ";
 		for (int j = 0; j < match.size(); j++) {
 			cout << match.at(j) << " ";
 		}
-		cout << endl;
+		cout << endl;*/
 		return match;
 	}
 	else {
@@ -329,10 +333,10 @@ vector<int> DataAss::distancePL(matchedDetections detection, std::vector<predict
 			}
 		}
 
-		for (int j = 0; j < ans[idx].size(); j++) {
+		/*for (int j = 0; j < ans[idx].size(); j++) {
 			cout << ans[idx].at(j) << " ";
 		}
-		cout << endl;
+		cout << endl;*/
 
 		return ans[idx];
 	}

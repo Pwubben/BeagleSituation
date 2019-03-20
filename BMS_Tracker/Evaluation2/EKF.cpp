@@ -45,7 +45,7 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 		0.0, 0.0, 0.0, 0.0, 1.0;
 }
 
-EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::MatrixXd& Q_, const Eigen::MatrixXd& P_, const int& modelNumber) :
+EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::MatrixXd& Q_, const Eigen::MatrixXd& P_, const int& modelNumber, Eigen::Vector3d beagleMeas) :
 	Q(Q_),
 	P(P_),
 	dt(1 / double(15)),
@@ -56,13 +56,15 @@ EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, 
 	//Initial state
 	x = Eigen::VectorXd(5);
 	x << navDet, heading, v, 0;
-
+	/*std::cout << "Beaglemeas: " << beagleMeas << std::endl;
+	std::cout << "nav: " << navDet.transpose() << std::endl;
+	std::cout << "x: " << x.transpose() << std::endl;*/
 	JH = Eigen::MatrixXd(2, 5);
 	JH << 1.0, 0.0, 0.0, 0.0, 0.0,
 		  0.0, 1.0, 0.0, 0.0, 0.0;
 }
 
-void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_) {
+void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_, Eigen::Vector3d beagleMeas) {
 	if (init) {
 		init = false;
 	}
@@ -89,7 +91,7 @@ void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_) {
 					Z_.resize(2);
 					Z_ << z;
 				}
-				update(Z_, angle_);
+				update(Z_, angle_,beagleMeas);
 				updateJA(dt);
 				predict();
 			}
@@ -106,7 +108,7 @@ void EKF::predict() {
 	P = JA * P * JA.transpose() + Q;
 }
 
-void EKF::update(const Eigen::VectorXd& z, double angle_) {
+void EKF::update(const Eigen::VectorXd& z, double angle_, Eigen::Vector3d beagleMeas) {
 
 	if (init) {
 		if (BeagleObject) {
@@ -130,12 +132,29 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 			else {
 				JH.resize(3, 5);
 				JH << 1.0, 0.0, 0.0, 0.0, 0.0,
-					0.0, 1.0, 0.0, 0.0, 0.0,
-					0.0, 0.0, x(3)*sin(M_PI + angle_ - x(2)), cos(M_PI + angle_ - x(2)), 0.0;
+					  0.0, 1.0, 0.0, 0.0, 0.0,
+					  0.0, 0.0, x(3)*sin(M_PI + angle_ - x(2)), cos(M_PI + angle_ - x(2)), 0.0;
 				Hx.resize(3);
 				Hx << x(0), x(1), x(3)*cos(M_PI + angle_ - x(2));
 			}
 		}
+		//if (!BeagleObject) {
+		//	if (R.cols() == 1) {
+		//		JH.resize(1, 5);
+		//		JH <<	(x(1) - beagleMeas(1)) / double(pow(beagleMeas(0), 2) - 2.0*beagleMeas(0)*x(0) + pow(beagleMeas(1), 2) - 2.0*beagleMeas(1)*x(1) + pow(x(0), 2) + pow(x(1), 2)), (beagleMeas(1) - x(0)) / double(pow(beagleMeas(0), 2) - 2.0*beagleMeas(0)*x(0) + pow(beagleMeas(1), 2) - 2.0*beagleMeas(1)*x(1) + pow(x(0), 2) + pow(x(1), 2)), 0.0, 0.0, 0.0;
+		//		Hx.resize(1);
+		//		Hx << atan2(x(0)-beagleMeas(0),x(1)-beagleMeas(1))-beagleMeas(2);
+		//	}
+		//	else {
+		//		JH.resize(3, 5);
+		//		JH << (x(0) - beagleMeas(0)) / double(sqrt(pow(x(0) - beagleMeas(0), 2) + pow(x(1) - beagleMeas(1), 2))), (x(1) - beagleMeas(1)) / double(sqrt(pow(x(0) - beagleMeas(0), 2) + pow(x(1) - beagleMeas(1), 2))), 0.0, 0.0, 0.0,
+		//			(x(1)-beagleMeas(1))/double(pow(beagleMeas(0),2)-2.0*beagleMeas(0)*x(0)+pow(beagleMeas(1),2)-2.0*beagleMeas(1)*x(1)+pow(x(0),2)+pow(x(1),2)) , (beagleMeas(1)- x(0)) / double(pow(beagleMeas(0), 2) - 2.0*beagleMeas(0)*x(0) + pow(beagleMeas(1), 2) - 2.0*beagleMeas(1)*x(1) + pow(x(0), 2) + pow(x(1), 2)), 0.0, 0.0, 0.0,
+		//			0.0, 0.0, x(3)*sin(M_PI + angle_ - x(2)), cos(M_PI + angle_ - x(2)), 0.0;
+		//		Hx.resize(3);
+		//		Hx << sqrt(pow(x(0) - beagleMeas(0), 2) + pow(x(1) - beagleMeas(1), 2)), atan2(x(0) - beagleMeas(0), x(1) - beagleMeas(1)) - beagleMeas(2), x(3)*cos(M_PI + angle_ - x(2));
+		//	}
+		//}
+		
 		//std::cout << "x: " << z(0) << "- y: " << z(1) << std::endl;
 		if (BeagleObject)
 			Hx = JH*x;
@@ -154,11 +173,13 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 			lambda = modelProbability(P, R, z);
 
 		if (!BeagleObject) {
-
-			//std::cout << "z: \n" << z.transpose() << std::endl;
+			//std::cout << "zm: \n" << z.transpose() << std::endl;
+			//std::cout << "z: \n" << Z.transpose() << std::endl;
 			//std::cout << "S:\n" << S << std::endl;
-			//std::cout << "Angle: \n" << angle_ << std::endl;
+			//std::cout << "K: \n" << K << std::endl;
 			//std::cout << "x state update: \n" << x << std::endl;
+			//std::cout << "JH: \n" << JH << std::endl;
+			//std::cout << "Hx: \n" << Hx << std::endl;
 		}
 		// Update estimate
 		x = x + K * (Z);
@@ -177,8 +198,8 @@ void EKF::update(const Eigen::VectorXd& z, double angle_) {
 		//std::cout << "K:\n" << K << std::endl;
 		//std::cout << "R:\n" << R << std::endl;
 
-		if (BeagleObject ) {
-			std::cout << "x:\n" << x << std::endl;
+		if (!BeagleObject ) {
+			//std::cout << "x:\n" << x << std::endl;
 			//std::cout << "Z:\n" << Z << std::endl;
 			//std::cout << "K:\n" << K << std::endl;
 			//std::cout << "R:\n" << R << std::endl;
@@ -205,18 +226,18 @@ void EKF::updateJA(double dt) {
 
 	//std::cout << "x state update1: \n" << x << std::endl;
 	if (modelNum == 5 || BeagleObject) {
-		if (fabs(x(4)) < 0.01) {
+		if (fabs(x(4)) < 0.005) {
 			x(0) = x(0) + (x(3) * dt) * sin(x(2));
 			x(1) = x(1) + (x(3) * dt) * cos(x(2));
-			x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
-			x(3) = x(3);
+			x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
+			x(3) = abs(x(3));
 			x(4) = Util::sgn(x(4))*std::max(double(abs(x(4))), double(0.0001));
 		}
 		else {
 			x(0) = x(0) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
 			x(1) = x(1) + (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2)));
 			x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
-			x(3) = x(3);
+			x(3) = abs(x(3));
 			x(4) = x(4);
 		}
 
@@ -226,7 +247,7 @@ void EKF::updateJA(double dt) {
 		if (fabs(x(4)) < 0.01) {
 			JA << 1.0, 0.0, x(3)*dt*cos(x(2)), dt*sin(x(2)), 0,
 				0.0, 1.0, -x(3)*dt*sin(x(2)), dt*cos(x(2)), 0,
-				0.0, 0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0, dt,
 				0.0, 0.0, 0.0, 1.0, 0.0,
 				0.0, 0.0, 0.0, 0.0, 1.0;
 		}
@@ -243,7 +264,7 @@ void EKF::updateJA(double dt) {
 		x(0) = x(0) + (x(3) * dt) * sin(x(2));
 		x(1) = x(1) + (x(3) * dt) * cos(x(2));
 		x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
-		x(3) = x(3);
+		x(3) = abs(x(3));
 		x(4) = 0;
 
 		JA = Eigen::MatrixXd(x.size() , x.size());
@@ -258,7 +279,7 @@ void EKF::updateJA(double dt) {
 		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
 		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
 		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
-		x(3) = x(3);
+		x(3) = abs(x(3));
 		x(4) = omega;
 
 		JA = Eigen::MatrixXd(x.size(), x.size());
@@ -273,7 +294,7 @@ void EKF::updateJA(double dt) {
 		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
 		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
 		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
-		x(3) = x(3);
+		x(3) = abs(x(3));
 		x(4) = omega;
 
 		JA = Eigen::MatrixXd(x.size(), x.size());

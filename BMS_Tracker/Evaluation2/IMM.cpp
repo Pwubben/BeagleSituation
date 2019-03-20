@@ -5,7 +5,7 @@
 #include "opencv2/opencv.hpp"
 #include <Eigen/Dense>
 
-IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vInit, const double& headingInit) : 
+IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vInit, const double& headingInit, Eigen::Vector3d beagleMeas) : 
 	P_model(modelNum, Eigen::MatrixXd(numStates, numStates)), 
 	P_mixed(modelNum, Eigen::MatrixXd(numStates, numStates)) 
 {
@@ -35,11 +35,11 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 		if (No < 5) 
 			filters.push_back(std::unique_ptr<KalmanFilters>(new Kalman(navDet, vInit, headingInit, Q_[0], P_[0], No)));
 		else
-			filters.push_back(std::unique_ptr<KalmanFilters>(new EKF(navDet, vInit, headingInit, Q_[1], P_[1], No)));
+			filters.push_back(std::unique_ptr<KalmanFilters>(new EKF(navDet, vInit, headingInit, Q_[1], P_[1], No, beagleMeas)));
 	}
 }
 
-void IMM::run(Eigen::VectorXd z, double radVel, double angle_)
+void IMM::run(Eigen::VectorXd z, double radVel, double angle_, Eigen::VectorXd beagleMeas)
 {
 	if (init)
 		init = false;
@@ -56,7 +56,7 @@ void IMM::run(Eigen::VectorXd z, double radVel, double angle_)
 	for (int i = 0; i < filters.size(); i++) {
 		filters[i]->setMatchFlag(matchFlag);
 		filters[i]->setR(Rvec[i]);
-		filters[i]->compute(z, radVel, angle_);
+		filters[i]->compute(z, radVel, angle_, beagleMeas);
 		
 		//Retrieve information from filters
 		lambda(i) = filters[i]->getProbability();
@@ -88,10 +88,10 @@ void IMM::stateInteraction()
 	}
 
 	//std::cout << "c_bar: \n" << cBar << std::endl;
-	std::cout << "mu_tilde: \n" << mu_tilde << std::endl;
+	//std::cout << "mu_tilde: \n" << mu_tilde << std::endl;
 	//std::cout << "x_model: \n" << x_model << std::endl;
 	x_mixed = x_model * mu_tilde;
-	std::cout << "x_mixed: \n" << x_mixed << std::endl;
+	//std::cout << "x_mixed: \n" << x_mixed << std::endl;
 
 	for (int j = 0; j < filters.size(); j++) {
 		for (int i = 0; i < filters.size(); i++) {
@@ -114,9 +114,9 @@ void IMM::stateEstimateCombination()
 	
 	if (matchFlag < 2) {
 		x = x_model * mu_hat;
-		std::cout << "x_model: \n" << x_model << std::endl;
-		std::cout << "x_end: \n" << x << std::endl;
-		std::cout << "mu_hat: " << mu_hat.transpose() << std::endl;
+		//std::cout << "x_model: \n" << x_model << std::endl;
+		//std::cout << "x_end: \n" << x << std::endl;
+		//std::cout << "mu_hat: " << mu_hat.transpose() << std::endl;
 	}
 	else {
 		if (fabs(x(4)) < 0.01) {
