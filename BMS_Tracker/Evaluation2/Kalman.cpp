@@ -84,8 +84,8 @@ void Kalman::update(Eigen::VectorXd& selected_detection) {
 
 			lambda = 1 / (2 * M_PI * sqrt( S.determinant())) * std::exp(-0.5*(Z).transpose()*S.inverse()*Z);
 			//std::cout << "Lambda: " << lambda << std::endl;
-			std::cout << "XKalman: \n" << x_predict << std::endl;
-			std::cout << "ZKalman: \n" << Z << std::endl;
+			//std::cout << "XKalman: \n" << x_predict << std::endl;
+			//std::cout << "ZKalman: \n" << Z << std::endl;
 			//std::cout << "SKalman: \n" << S << std::endl;
 			//std::cout << "KKalman: \n" << K << std::endl;
 			

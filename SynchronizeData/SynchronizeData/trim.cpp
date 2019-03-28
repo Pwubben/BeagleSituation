@@ -64,7 +64,7 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	
 	int endFrame = end- startFrame;
 	endFrame = end;
-
+	//endFrame = 2540;
 	//endFrame = round(endFrame);
 	// Cycle trough frames until video is unpaused
 
@@ -78,12 +78,12 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	std:: cout << "Start frame reached, starting write" << std::endl;
 
 	for (int i = 0; i < endFrame; i++) {
-		/*if (count == 0) {
-			for (int j = 0; j < 2420; j++) {
+		if (count == 0) {
+			for (int j = 0; j < 2540; j++) {
 				src >> tSrc;
 				count++;
 			}
-		}*/
+		}
 
 		src >> tSrc;
 
@@ -94,9 +94,9 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 		}
 		video.write(tSrc);
 		count++;
-		/*cv::imshow("frame", tSrc);
+		cv::imshow("frame", tSrc);
 		std::cout << count << std::endl;
-		cv::waitKey(0);*/
+		cv::waitKey(0);
 		if (count == endFrame / 4) {
 			std::cout << "25% done" << std::endl;
 		}

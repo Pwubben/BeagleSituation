@@ -1,0 +1,753 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DEFECTS>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>mat.inl.hpp</FILENAME>
+      <LINE>502</LINE>
+      <COLUMN>17</COLUMN>
+    </SFA>
+    <DEFECTCODE>6297</DEFECTCODE>
+    <DESCRIPTION>Arithmetic overflow:  32-bit value is shifted, then cast to 64-bit value.  Results might not be an expected value.</DESCRIPTION>
+    <FUNCTION>cv::Mat::{ctor}</FUNCTION>
+    <DECORATED>??0Mat@cv@@QEAA@HHHPEAX_K@Z</DECORATED>
+    <FUNCLINE>495</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>mat.inl.hpp</FILENAME>
+      <LINE>535</LINE>
+      <COLUMN>17</COLUMN>
+    </SFA>
+    <DEFECTCODE>6297</DEFECTCODE>
+    <DESCRIPTION>Arithmetic overflow:  32-bit value is shifted, then cast to 64-bit value.  Results might not be an expected value.</DESCRIPTION>
+    <FUNCTION>cv::Mat::{ctor}</FUNCTION>
+    <DECORATED>??0Mat@cv@@QEAA@V?$Size_@H@1@HPEAX_K@Z</DECORATED>
+    <FUNCLINE>528</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>mat.inl.hpp</FILENAME>
+      <LINE>2132</LINE>
+      <COLUMN>11</COLUMN>
+    </SFA>
+    <DEFECTCODE>6297</DEFECTCODE>
+    <DESCRIPTION>Arithmetic overflow:  32-bit value is shifted, then cast to 64-bit value.  Results might not be an expected value.</DESCRIPTION>
+    <FUNCTION>cv::SparseMat::elemSize</FUNCTION>
+    <DECORATED>?elemSize@SparseMat@cv@@QEBA_KXZ</DECORATED>
+    <FUNCLINE>2130</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>mat.inl.hpp</FILENAME>
+      <LINE>2576</LINE>
+      <COLUMN>23</COLUMN>
+    </SFA>
+    <DEFECTCODE>6011</DEFECTCODE>
+    <DESCRIPTION>Dereferencing NULL pointer 'm'. See line 2573 for an earlier location where this can occur</DESCRIPTION>
+    <FUNCTION>cv::MatConstIterator::{ctor}</FUNCTION>
+    <DECORATED>??0MatConstIterator@cv@@QEAA@PEBVMat@1@HH@Z</DECORATED>
+    <FUNCLINE>2572</FUNCLINE>
+    <PROBABILITY>1</PROBABILITY>
+    <RANK>4</RANK>
+    <CATEGORY>
+      <RULECATEGORY>mspft</RULECATEGORY>
+    </CATEGORY>
+    <PATH>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2573</LINE>
+        <COLUMN>7</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2573</LINE>
+        <COLUMN>21</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2573</LINE>
+        <COLUMN>42</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2573</LINE>
+        <COLUMN>57</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2573</LINE>
+        <COLUMN>70</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2575</LINE>
+        <COLUMN>4</COLUMN>
+        <KEYEVENT>
+          <ID>1</ID>
+          <KIND>branch</KIND>
+          <IMPORTANCE>Full</IMPORTANCE>
+          <MESSAGE>'_m' may be NULL (Skip this branch)</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2576</LINE>
+        <COLUMN>23</COLUMN>
+        <KEYEVENT>
+          <ID>2</ID>
+          <KIND>usage</KIND>
+          <IMPORTANCE>Essential</IMPORTANCE>
+          <MESSAGE>'_m' is dereferenced, but may still be NULL</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+    </PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>mat.inl.hpp</FILENAME>
+      <LINE>2590</LINE>
+      <COLUMN>23</COLUMN>
+    </SFA>
+    <DEFECTCODE>6011</DEFECTCODE>
+    <DESCRIPTION>Dereferencing NULL pointer 'm'. See line 2587 for an earlier location where this can occur</DESCRIPTION>
+    <FUNCTION>cv::MatConstIterator::{ctor}</FUNCTION>
+    <DECORATED>??0MatConstIterator@cv@@QEAA@PEBVMat@1@V?$Point_@H@1@@Z</DECORATED>
+    <FUNCLINE>2586</FUNCLINE>
+    <PROBABILITY>1</PROBABILITY>
+    <RANK>4</RANK>
+    <CATEGORY>
+      <RULECATEGORY>mspft</RULECATEGORY>
+    </CATEGORY>
+    <PATH>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2587</LINE>
+        <COLUMN>7</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2587</LINE>
+        <COLUMN>21</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2587</LINE>
+        <COLUMN>42</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2587</LINE>
+        <COLUMN>57</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2587</LINE>
+        <COLUMN>70</COLUMN>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2589</LINE>
+        <COLUMN>4</COLUMN>
+        <KEYEVENT>
+          <ID>1</ID>
+          <KIND>branch</KIND>
+          <IMPORTANCE>Full</IMPORTANCE>
+          <MESSAGE>'_m' may be NULL (Skip this branch)</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+      <SFA>
+        <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+        <FILENAME>mat.inl.hpp</FILENAME>
+        <LINE>2590</LINE>
+        <COLUMN>23</COLUMN>
+        <KEYEVENT>
+          <ID>2</ID>
+          <KIND>usage</KIND>
+          <IMPORTANCE>Essential</IMPORTANCE>
+          <MESSAGE>'_m' is dereferenced, but may still be NULL</MESSAGE>
+        </KEYEVENT>
+      </SFA>
+    </PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>utility.hpp</FILENAME>
+      <LINE>499</LINE>
+      <COLUMN>60</COLUMN>
+    </SFA>
+    <DEFECTCODE>6297</DEFECTCODE>
+    <DESCRIPTION>Arithmetic overflow:  32-bit value is shifted, then cast to 64-bit value.  Results might not be an expected value.</DESCRIPTION>
+    <FUNCTION>cv::getElemSize</FUNCTION>
+    <DECORATED>?getElemSize@cv@@YA_KH@Z</DECORATED>
+    <FUNCLINE>499</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>cuda.inl.hpp</FILENAME>
+      <LINE>301</LINE>
+      <COLUMN>11</COLUMN>
+    </SFA>
+    <DEFECTCODE>6297</DEFECTCODE>
+    <DESCRIPTION>Arithmetic overflow:  32-bit value is shifted, then cast to 64-bit value.  Results might not be an expected value.</DESCRIPTION>
+    <FUNCTION>cv::cuda::GpuMat::elemSize</FUNCTION>
+    <DECORATED>?elemSize@GpuMat@cuda@cv@@QEBA_KXZ</DECORATED>
+    <FUNCLINE>299</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>cuda.inl.hpp</FILENAME>
+      <LINE>482</LINE>
+      <COLUMN>11</COLUMN>
+    </SFA>
+    <DEFECTCODE>6297</DEFECTCODE>
+    <DESCRIPTION>Arithmetic overflow:  32-bit value is shifted, then cast to 64-bit value.  Results might not be an expected value.</DESCRIPTION>
+    <FUNCTION>cv::cuda::HostMem::elemSize</FUNCTION>
+    <DECORATED>?elemSize@HostMem@cuda@cv@@QEBA_KXZ</DECORATED>
+    <FUNCLINE>480</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>visitor.h</FILENAME>
+      <LINE>230</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::DenseBase&lt;Eigen::Block&lt;Eigen::Matrix&lt;double,-1,-1,0,-1,-1&gt;,-1,1,1&gt; &gt;::minCoeff</FUNCTION>
+    <DECORATED>??$minCoeff@_J@?$DenseBase@V?$Block@V?$Matrix@N$0?0$0?0$0A@$0?0$0?0@Eigen@@$0?0$00$00@Eigen@@@Eigen@@QEBANPEA_J@Z</DECORATED>
+    <FUNCLINE>224</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>visitor.h</FILENAME>
+      <LINE>230</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::DenseBase&lt;Eigen::Matrix&lt;double,-1,1,0,-1,1&gt; &gt;::minCoeff</FUNCTION>
+    <DECORATED>??$minCoeff@_J@?$DenseBase@V?$Matrix@N$0?0$00$0A@$0?0$00@Eigen@@@Eigen@@QEBANPEA_J@Z</DECORATED>
+    <FUNCLINE>224</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>562</LINE>
+      <COLUMN>4</COLUMN>
+    </SFA>
+    <DEFECTCODE>6294</DEFECTCODE>
+    <DESCRIPTION>Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;float,3,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@M$02$00@cv@@QEAA@MMM@Z</DECORATED>
+    <FUNCLINE>558</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>562</LINE>
+      <COLUMN>43</COLUMN>
+    </SFA>
+    <DEFECTCODE>6201</DEFECTCODE>
+    <DESCRIPTION>Index '3' is out of valid index range '0' to '2' for possibly stack allocated buffer 'this-&gt;val'.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;float,3,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@M$02$00@cv@@QEAA@MMM@Z</DECORATED>
+    <FUNCLINE>558</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>562</LINE>
+      <COLUMN>4</COLUMN>
+    </SFA>
+    <DEFECTCODE>6294</DEFECTCODE>
+    <DESCRIPTION>Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;double,3,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@N$02$00@cv@@QEAA@NNN@Z</DECORATED>
+    <FUNCLINE>558</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>562</LINE>
+      <COLUMN>43</COLUMN>
+    </SFA>
+    <DEFECTCODE>6201</DEFECTCODE>
+    <DESCRIPTION>Index '3' is out of valid index range '0' to '2' for possibly stack allocated buffer 'this-&gt;val'.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;double,3,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@N$02$00@cv@@QEAA@NNN@Z</DECORATED>
+    <FUNCLINE>558</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>plainobjectbase.h</FILENAME>
+      <LINE>316</LINE>
+      <COLUMN>27</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double,-1,1,0,-1,1&gt; &gt;::resize</FUNCTION>
+    <DECORATED>?resize@?$PlainObjectBase@V?$Matrix@N$0?0$00$0A@$0?0$00@Eigen@@@Eigen@@QEAAX_J@Z</DECORATED>
+    <FUNCLINE>309</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>554</LINE>
+      <COLUMN>4</COLUMN>
+    </SFA>
+    <DEFECTCODE>6294</DEFECTCODE>
+    <DESCRIPTION>Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;float,2,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@M$01$00@cv@@QEAA@MM@Z</DECORATED>
+    <FUNCLINE>550</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>554</LINE>
+      <COLUMN>43</COLUMN>
+    </SFA>
+    <DEFECTCODE>6201</DEFECTCODE>
+    <DESCRIPTION>Index '2' is out of valid index range '0' to '1' for possibly stack allocated buffer 'this-&gt;val'.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;float,2,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@M$01$00@cv@@QEAA@MM@Z</DECORATED>
+    <FUNCLINE>550</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>554</LINE>
+      <COLUMN>4</COLUMN>
+    </SFA>
+    <DEFECTCODE>6294</DEFECTCODE>
+    <DESCRIPTION>Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;double,2,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@N$01$00@cv@@QEAA@NN@Z</DECORATED>
+    <FUNCLINE>550</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>554</LINE>
+      <COLUMN>43</COLUMN>
+    </SFA>
+    <DEFECTCODE>6201</DEFECTCODE>
+    <DESCRIPTION>Index '2' is out of valid index range '0' to '1' for possibly stack allocated buffer 'this-&gt;val'.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;double,2,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@N$01$00@cv@@QEAA@NN@Z</DECORATED>
+    <FUNCLINE>550</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>570</LINE>
+      <COLUMN>4</COLUMN>
+    </SFA>
+    <DEFECTCODE>6294</DEFECTCODE>
+    <DESCRIPTION>Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;float,4,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@M$03$00@cv@@QEAA@MMMM@Z</DECORATED>
+    <FUNCLINE>566</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>570</LINE>
+      <COLUMN>43</COLUMN>
+    </SFA>
+    <DEFECTCODE>6201</DEFECTCODE>
+    <DESCRIPTION>Index '4' is out of valid index range '0' to '3' for possibly stack allocated buffer 'this-&gt;val'.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;float,4,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@M$03$00@cv@@QEAA@MMMM@Z</DECORATED>
+    <FUNCLINE>566</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>570</LINE>
+      <COLUMN>4</COLUMN>
+    </SFA>
+    <DEFECTCODE>6294</DEFECTCODE>
+    <DESCRIPTION>Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;double,4,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@N$03$00@cv@@QEAA@NNNN@Z</DECORATED>
+    <FUNCLINE>566</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\documents\opencvrelease\opencv-3.4.0\build\install\include\opencv2\core\</FILEPATH>
+      <FILENAME>matx.hpp</FILENAME>
+      <LINE>570</LINE>
+      <COLUMN>43</COLUMN>
+    </SFA>
+    <DEFECTCODE>6201</DEFECTCODE>
+    <DESCRIPTION>Index '4' is out of valid index range '0' to '3' for possibly stack allocated buffer 'this-&gt;val'.</DESCRIPTION>
+    <FUNCTION>cv::Matx&lt;double,4,1&gt;::{ctor}</FUNCTION>
+    <DECORATED>??0?$Matx@N$03$00@cv@@QEAA@NNNN@Z</DECORATED>
+    <FUNCLINE>566</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>plainobjectbase.h</FILENAME>
+      <LINE>367</LINE>
+      <COLUMN>27</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double,-1,1,0,-1,1&gt; &gt;::resizeLike</FUNCTION>
+    <DECORATED>??$resizeLike@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@?$PlainObjectBase@V?$Matrix@N$0?0$00$0A@$0?0$00@Eigen@@@Eigen@@QEAAXAEBU?$EigenBase@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@1@@Z</DECORATED>
+    <FUNCLINE>362</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>plainobjectbase.h</FILENAME>
+      <LINE>372</LINE>
+      <COLUMN>32</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double,-1,1,0,-1,1&gt; &gt;::resizeLike</FUNCTION>
+    <DECORATED>??$resizeLike@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@?$PlainObjectBase@V?$Matrix@N$0?0$00$0A@$0?0$00@Eigen@@@Eigen@@QEAAXAEBU?$EigenBase@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@1@@Z</DECORATED>
+    <FUNCLINE>362</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>plainobjectbase.h</FILENAME>
+      <LINE>367</LINE>
+      <COLUMN>27</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double,3,1,0,3,1&gt; &gt;::resizeLike</FUNCTION>
+    <DECORATED>??$resizeLike@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@?$PlainObjectBase@V?$Matrix@N$02$00$0A@$02$00@Eigen@@@Eigen@@QEAAXAEBU?$EigenBase@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@1@@Z</DECORATED>
+    <FUNCLINE>362</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>plainobjectbase.h</FILENAME>
+      <LINE>372</LINE>
+      <COLUMN>32</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::PlainObjectBase&lt;Eigen::Matrix&lt;double,3,1,0,3,1&gt; &gt;::resizeLike</FUNCTION>
+    <DECORATED>??$resizeLike@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@?$PlainObjectBase@V?$Matrix@N$02$00$0A@$02$00@Eigen@@@Eigen@@QEAAXAEBU?$EigenBase@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@1@@Z</DECORATED>
+    <FUNCLINE>362</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>681</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,3,1,0,3,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Block&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt;,-1,1,0&gt; &gt;,Eigen::internal::assign_op&lt;double,double&gt;,0&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$02$00$0A@$02$00@Eigen@@@internal@Eigen@@U?$evaluator@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@23@U?$assign_op@NN@23@$0A@@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>682</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,3,1,0,3,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Block&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt;,-1,1,0&gt; &gt;,Eigen::internal::assign_op&lt;double,double&gt;,0&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$02$00$0A@$02$00@Eigen@@@internal@Eigen@@U?$evaluator@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@23@U?$assign_op@NN@23@$0A@@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>672</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,3,1,0,3,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Block&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt;,-1,1,0&gt; &gt;,Eigen::internal::assign_op&lt;double,double&gt;,0&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$02$00$0A@$02$00@Eigen@@@internal@Eigen@@U?$evaluator@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@23@U?$assign_op@NN@23@$0A@@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>673</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,3,1,0,3,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Block&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt;,-1,1,0&gt; &gt;,Eigen::internal::assign_op&lt;double,double&gt;,0&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$02$00$0A@$02$00@Eigen@@@internal@Eigen@@U?$evaluator@V?$Block@V?$Matrix@N$03$00$0A@$03$00@Eigen@@$0?0$00$0A@@Eigen@@@23@U?$assign_op@NN@23@$0A@@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\util\</FILEPATH>
+      <FILENAME>memory.h</FILENAME>
+      <LINE>445</LINE>
+      <COLUMN>18</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::first_aligned</FUNCTION>
+    <DECORATED>??$first_aligned@$0BA@N_J@internal@Eigen@@YA_JPEBN_J@Z</DECORATED>
+    <FUNCLINE>439</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\util\</FILEPATH>
+      <FILENAME>memory.h</FILENAME>
+      <LINE>451</LINE>
+      <COLUMN>74</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::first_aligned</FUNCTION>
+    <DECORATED>??$first_aligned@$0BA@N_J@internal@Eigen@@YA_JPEBN_J@Z</DECORATED>
+    <FUNCLINE>439</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>681</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>682</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>672</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>673</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,4,1,0,4,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$03$00$0A@$03$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>681</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$01$0A@$01$01@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>682</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$01$0A@$01$01@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>672</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$01$0A@$01$01@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>673</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,2,0,2,2&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$01$0A@$01$01@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>681</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$00$0A@$01$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>682</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::colIndexByOuterInner</FUNCTION>
+    <DECORATED>?colIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$00$0A@$01$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>678</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>672</LINE>
+      <COLUMN>42</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$00$0A@$01$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+  <DEFECT>
+    <SFA>
+      <FILEPATH>c:\users\pimwu\downloads\eigen-eigen-323c052e1731\eigen\src\core\</FILEPATH>
+      <FILENAME>assignevaluator.h</FILENAME>
+      <LINE>673</LINE>
+      <COLUMN>39</COLUMN>
+    </SFA>
+    <DEFECTCODE>6326</DEFECTCODE>
+    <DESCRIPTION>Potential comparison of a constant with another constant.</DESCRIPTION>
+    <FUNCTION>Eigen::internal::generic_dense_assignment_kernel&lt;Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::evaluator&lt;Eigen::Matrix&lt;double,2,1,0,2,1&gt; &gt;,Eigen::internal::swap_assign_op&lt;double&gt;,1&gt;::rowIndexByOuterInner</FUNCTION>
+    <DECORATED>?rowIndexByOuterInner@?$generic_dense_assignment_kernel@U?$evaluator@V?$Matrix@N$01$00$0A@$01$00@Eigen@@@internal@Eigen@@U123@U?$swap_assign_op@N@23@$00@internal@Eigen@@SA_J_J0@Z</DECORATED>
+    <FUNCLINE>669</FUNCLINE>
+    <PATH></PATH>
+  </DEFECT>
+</DEFECTS>

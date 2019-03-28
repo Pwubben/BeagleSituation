@@ -28,7 +28,7 @@ void Detection::run(std::string path, std::string File, std::string beagleFile, 
 	int count = 0;
 
 	//Performance parameters
-	double max_dimension = 800;// evalSettings.maxDimension;
+	double max_dimension = evalSettings.maxDimension;
 	double sample_step = 25;
 	FOV = Util::deg2Rad(88.4);
 
@@ -45,12 +45,14 @@ void Detection::run(std::string path, std::string File, std::string beagleFile, 
 
 			while (1) {
 				double duration = static_cast<double>(cv::getTickCount());
-				//if (count == 0) {
-				//	for (int i = 0; i < 1500; i++) {
-				//		capture >> src;
-				//		count++;
-				//	}
-				//}
+				/*if (count == 0) {
+					for (int i = 0; i < 1500; i++) {
+						capture >> src;
+						count++;
+					}
+				}*/
+				/*if (count == 1800)
+					cv::waitKey(0);*/
 
 				capture >> src;
 				if (src.empty())
@@ -79,7 +81,7 @@ void Detection::run(std::string path, std::string File, std::string beagleFile, 
 
 				data_ass_->run(info);
 				count++;
-				std::cout << count << std::endl;
+				//std::cout << count << std::endl;
 				duration = static_cast<double>(cv::getTickCount()) - duration;
 				duration /= cv::getTickFrequency();
 				std::cout << duration << std::endl;
@@ -98,11 +100,11 @@ void Detection::run(std::string path, std::string File, std::string beagleFile, 
 	}
 	//std::cout << "ret (python)  = " << std::endl << format(data, cv::Formatter::FMT_PYTHON) << std::endl << std::endl;
 
-	vector<vector<Eigen::VectorXd>> stateVectors = data_ass_->getStateVectors();
-	writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));
+	/*vector<vector<Eigen::VectorXd>> stateVectors = data_ass_->getStateVectors();
+	writeDataFile(stateVectors, getFileString(beagleDes), getFileString(targetDes));*/
 
-	/*vector<vector<vector<Eigen::VectorXd>>> resultVectors = data_ass_->getResultVectors();
-	writeResultFile(resultVectors, getFileString(resultDes));*/
+	vector<vector<vector<Eigen::VectorXd>>> resultVectors = data_ass_->getResultVectors();
+	writeResultFile(resultVectors, getFileString(resultDes));
 
 }
 
@@ -289,9 +291,9 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 	cout << point.x << " - " << point.y + GT.height/2 << endl;
 	rectangle(drawWindow, GT.tl()+cv::Point2i(40, - 383), GT.br() + cv::Point2i(40, -383), color);*/
 
-	imshow("Src", drawWindow);
-	waitKey(1);
-	waitKey(1);
+	//imshow("Src", drawWindow);
+	//waitKey(1);
+	//waitKey(1);
 	//Compute angle
 	
 	//info.cameraAngle = detectionAngles;

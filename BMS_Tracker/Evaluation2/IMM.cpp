@@ -23,7 +23,7 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 	lambda = Eigen::VectorXd(modelNum);
 	mu_hat = Eigen::VectorXd(modelNum);
 	for (int i = 0; i < mu_hat.size(); i++)
-		mu_hat(i) = 1 / double(modelNum);
+		mu_hat(i) = 1.0 / double(modelNum);
 
 	//State estimate combination
 	x = Eigen::VectorXd(numStates);
@@ -44,11 +44,13 @@ void IMM::run(Eigen::VectorXd z, double radVel, double angle_, Eigen::VectorXd b
 	if (init)
 		init = false;
 	else {
-		if (matchFlag < 2) {
+		if (matchFlag == 0) {
 			stateInteraction();
-			for (int i = 0; i < filters.size(); i++) {
-				filters[i]->setState(x_mixed.col(i));
-				filters[i]->setCovariance(P_mixed[i]);
+			if (matchFlag == 0) {
+				for (int i = 0; i < filters.size(); i++) {
+					filters[i]->setState(x_mixed.col(i));
+					filters[i]->setCovariance(P_mixed[i]);
+				}
 			}
 		}
 	}
@@ -66,7 +68,8 @@ void IMM::run(Eigen::VectorXd z, double radVel, double angle_, Eigen::VectorXd b
 		P_mixed[i] = P_mixed[i].setZero();
 		
 	}
-
+	if (matchFlag == 0)
+		//std::cout <<"lambda:\n "<<lambda << std::endl;
 	if (matchFlag < 2) 
 		modelProbabilityUpdate();
 
@@ -82,7 +85,7 @@ void IMM::stateInteraction()
 	for (int j = 0; j < filters.size(); j++) {
 		cBar = stateTransitionProb.col(j).transpose()*mu_hat;
 		for (int i = 0; i < filters.size(); i++) {
-			mu_tilde(i, j) = 1/cBar* stateTransitionProb(i, j) * mu_hat(i);
+			mu_tilde(i, j) = 1.0/cBar* stateTransitionProb(i, j) * mu_hat(i);
 			//std::cout << "stateprob: \n" << stateTransitionProb(i, j) << std::endl;
 		}
 	}
@@ -106,7 +109,9 @@ void IMM::modelProbabilityUpdate()
 	double c = lambda.sum();
 	
 	//Model probability
-	mu_hat = 1 / c * lambda;
+	mu_hat = 1.0 / c * lambda;
+	if (matchFlag == 0)
+		std::cout << "mu_hat:\n" << mu_hat << std::endl;
 }
 
 void IMM::stateEstimateCombination()

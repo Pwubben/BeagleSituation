@@ -63,12 +63,12 @@ void DataAss::run(const detection& info) {
 	GlobalNearestNeighbor(info, predictionVector, unassignedDetection, lastDetection, matchFlag);
 
 	//For ground truth velocity
-	TargetTrack->update(_targetMeas);
+	/*TargetTrack->update(_targetMeas);
 
 	BeagleState.push_back(BeagleTrack->getState());
 	TargetState.push_back(TargetTrack->getState());
 
-	TargetTrack->compute(_targetMeas);
+	TargetTrack->compute(_targetMeas);*/
 
 	//TODO Beagle KF - Obtain Beagle updates 
 	BeagleTrack->compute(_beagleMeas);
@@ -89,11 +89,11 @@ void DataAss::run(const detection& info) {
 	}
 
 	drawCount++;
-	//Draw results
-	if (drawCount > 100) {
-		drawResults();
-		drawCount = 0;
-	}
+	//////Draw results
+	//if (drawCount > 200) {
+	//	drawResults();
+	//	drawCount = 0;
+	//}
 }
 
 void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<prediction> predictionVector, std::vector<bool>& unassignedDetection, std::vector<double> lastDetection, std::vector<int> matchFlag) {
@@ -176,12 +176,12 @@ void DataAss::setTargetData(Eigen::Vector4d& targetData_) {
 
 std::vector<int> DataAss::distanceDet(const detection& info, std::vector<prediction> rdet) {
 	Eigen::MatrixXd d(rdet.size(), info.cameraAngle.size());
-	double stdDev = 18;
-	double mu = 105; //Should be dependent on range
+	double stdDev = 18.0;
+	double mu = 105.0; //Should be dependent on range
 
 	for (int i = 0; i < rdet.size(); i++) {
 		for (int j = 0; j < info.cameraAngle.size(); j++) {
-			d(i, j) = std::min(abs(info.cameraAngle[j] - rdet[i].angle) * pow(rdet[i].range,1.2)/ (1 / (sqrt(2.0 * M_PI)*stdDev)*std::exp(-0.5*pow((info.cameraElevation[j] - mu) / stdDev, 2))),1e4);
+			d(i, j) = std::min(abs(info.cameraAngle[j] - rdet[i].angle) * pow(rdet[i].range,1.2)/ (1.0 / (sqrt(2.0 * M_PI)*stdDev)*std::exp(-0.5*pow((info.cameraElevation[j] - mu) / stdDev, 2))),1e4);
 			
 			//if ((info.cameraAngle[i] > 0.137680) && (info.cameraAngle[i] < 0.137682))
 			//	cv::waitKey(0);
@@ -258,7 +258,7 @@ std::pair<vector<double>,vector<double>> DataAss::distanceDet(vector<double> cde
 	vector<double> probability;
 
 	for (int i = 0; i < cdet.size(); i++) {
-		lambda.push_back(1 / (sqrt(2.0 * M_PI)*stdDev)*std::exp(-0.5*pow((hdet[i] - mu) / stdDev, 2)));
+		lambda.push_back(1.0 / (sqrt(2.0 * M_PI)*stdDev)*std::exp(-0.5*pow((hdet[i] - mu) / stdDev, 2)));
 		d.push_back(abs(cdet[i] - rdet));
 		probability.push_back(std::min(d.back() / lambda.back(), 1e6));
 	}

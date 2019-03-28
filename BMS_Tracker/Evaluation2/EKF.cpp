@@ -134,6 +134,7 @@ void EKF::update(const Eigen::VectorXd& z, double angle_, Eigen::Vector3d beagle
 				JH << 1.0, 0.0, 0.0, 0.0, 0.0,
 					  0.0, 1.0, 0.0, 0.0, 0.0,
 					  0.0, 0.0, x(3)*sin(M_PI + angle_ - x(2)), cos(M_PI + angle_ - x(2)), 0.0;
+				
 				Hx.resize(3);
 				Hx << x(0), x(1), x(3)*cos(M_PI + angle_ - x(2));
 			}
@@ -174,11 +175,12 @@ void EKF::update(const Eigen::VectorXd& z, double angle_, Eigen::Vector3d beagle
 
 		if (!BeagleObject) {
 			//std::cout << "zm: \n" << z.transpose() << std::endl;
-			//std::cout << "z: \n" << Z.transpose() << std::endl;
-			//std::cout << "S:\n" << S << std::endl;
+			//std::cout << "R: \n" << R << std::endl;
+			//std::cout << "P:\n" << P << std::endl;
+			//std::cout << "S1:\n" << S << std::endl;
 			//std::cout << "K: \n" << K << std::endl;
 			//std::cout << "x state update: \n" << x << std::endl;
-			//std::cout << "JH: \n" << JH << std::endl;
+			//std::cout << "JH1: \n" << JH << std::endl;
 			//std::cout << "Hx: \n" << Hx << std::endl;
 		}
 		// Update estimate
@@ -275,7 +277,7 @@ void EKF::updateJA(double dt) {
 				0.0, 0.0, 0.0, 0.0, 0.0;
 	}
 	if (modelNum == 7) {
-		double omega = Util::deg2Rad(-3);
+		double omega = Util::deg2Rad(-10);
 		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
 		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
 		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
@@ -290,7 +292,7 @@ void EKF::updateJA(double dt) {
 			0.0, 0.0, 0.0, 0.0, 0.0;
 	}
 	if (modelNum == 8) {
-		double omega = Util::deg2Rad(3);
+		double omega = Util::deg2Rad(10);
 		x(0) = x(0) + (x(3) / omega) * (-cos(omega * dt + x(2)) + cos(x(2)));
 		x(1) = x(1) + (x(3) / omega) * (sin(omega * dt + x(2)) - sin(x(2)));
 		x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
@@ -313,11 +315,14 @@ double EKF::modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::
 
 	Eigen::MatrixXd JHT = P * JH.transpose();
 	Eigen::MatrixXd S = JH * JHT + R;
+	//if (matchFlag == 0) {
+	//	//std::cout << "S:\n" << S << std::endl;
+	//	std::cout << "P:\n" << P << std::endl;
+	//}
+	double lambda = 1.0 / (2.0 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z-Hx).transpose()*S.inverse()*(z - Hx));
 
-	double lambda = 1 / (2 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z-Hx).transpose()*S.inverse()*(z - Hx));
-
-	if (lambda < 1e-30)
-		lambda = 1e-30;
+	if (lambda < 1e-80)
+		lambda = 1e-80;
 
 	return lambda;
 }
