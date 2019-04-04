@@ -17,6 +17,7 @@ struct detection {
 	std::vector<double> radarVel;
 	std::vector<double> cameraAngle;
 	std::vector<double> cameraElevation;
+	std::vector<double> boundRectx;
 };
 
 struct evaluationSettings {
@@ -148,7 +149,7 @@ class KalmanFilters {
 public:
 	KalmanFilters() = default;
 	virtual ~KalmanFilters() = default;
-	virtual void compute(Eigen::VectorXd z, double radVel_ = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) = 0;
+	virtual void compute(Eigen::VectorXd z, double radVel_ = 0, double omega_ = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) = 0;
 	virtual Eigen::VectorXd getState() = 0;
 	virtual Eigen::MatrixXd getCovariance() = 0;
 	virtual double getProbability() = 0;
@@ -165,7 +166,7 @@ public:
 	Kalman(const Eigen::Vector2d& navDet, const double& v, const double& heading, const Eigen::Matrix4d& Q_, const Eigen::Matrix4d& P_, const int& modelNumber = 0);
 	
 	//Kalman functions
-	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) override;
+	void compute(Eigen::VectorXd detection, double radVel_ = 0, double omega = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) override;
 	void gainUpdate();
 	void predict();
 	void update(Eigen::VectorXd& selected_detections);
@@ -222,12 +223,12 @@ public:
 
 	//Kalman functions
 	void compute(Eigen::Vector2d detection, double dt);
-	void compute(Eigen::VectorXd detection, double radVel_ = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) override;
+	void compute(Eigen::VectorXd detection, double radVel_ = 0, double omega = 0, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0,0 }) override;
 	void updateJA(double dt);
 	void predict();
-	void update(const Eigen::VectorXd& Z, double angle_ = 0, Eigen::Vector3d beagleMeas = { 0,0 ,0});
+	void update(const Eigen::VectorXd& Z, double angle_ = 0, double omega = 0, Eigen::Vector3d beagleMeas = { 0,0 ,0});
 
-	double modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::VectorXd & z);
+	void modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::VectorXd & z);
 
 	//Get Functions
 	Eigen::Vector2d getPrediction();
@@ -247,7 +248,7 @@ private:
 	bool init;
 	const int n = 5; // Number of states
 	double dt; //Sample time
-	int modelNum;
+	int modelNum=0;
 	int matchFlag;
 
 	double sGPS;
@@ -286,7 +287,7 @@ class IMM {
 public:
 	IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::vector<Eigen::MatrixXd>& Q_, const std::vector<Eigen::MatrixXd>& P_, const Eigen::Vector2d& navDet, const double& vInit, const double& headingInit, Eigen::Vector3d beagleMeas = { 0,0,0 });
 
-	void run(Eigen::VectorXd z, double radVel, double angle_, Eigen::VectorXd beagleMeas);
+	void run(Eigen::VectorXd z, double radVel, double angle_,double omega, Eigen::VectorXd beagleMeas);
 	void stateInteraction();
 	void modelProbabilityUpdate();
 	void stateEstimateCombination();
@@ -341,7 +342,7 @@ public:
 	struct prediction getPrediction(); // based on protected values
 	double getDetection();
 	double getAngle();
-	void setDetection(const double& range, const double& angle, const double& velocity, Eigen::Vector4d beagleMeas, int matchFlag);
+	void setDetection(const double& range, const double& angle, const double& velocity, const double& omega, Eigen::Vector4d beagleMeas, int matchFlag, double x= 0.0);
 
 	void body2nav(const double& range, const double& angle, Eigen::Vector4d& beagleMeas);
 	void nav2body(Eigen::Vector3d _beaglePrediction);
@@ -380,6 +381,7 @@ protected:
 	double range_;
 	double angle_;
 	double radVel_;
+	double omega_;
 	double heading;
 	int matchFlag_;
 
@@ -411,8 +413,8 @@ public:
 	DataAss::DataAss(struct evaluationSettings settings) : tracks_(), absenceThreshold(300), objectChoice(settings.objectChoice), evalSettings(settings), cameraUtil(settings.cameraUtil)  {
 		//Kalman filter Beagle
 		Eigen::VectorXd xInit(5);
-		xInit << 0.0, 0.0, 0.0, 8.0, 0.0; // Initiate velocity as it is not measured
-		EKFParams params = { 0.1, 200.0, 0.1, 0.05, 0.05, 0.05 };
+		xInit << 0.0, 0.0, 0.0, 5.0, 0.0; // Initiate velocity as it is not measured
+		EKFParams params = { 0.1, 20.0, 0.1, 0.05, 0.05, 0.05 };
 
 		//Initiate EKF for Beagle
 		BeagleTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
@@ -488,9 +490,9 @@ public:
 	void run(std::string path, std::string File, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets);
 	void windowDetect(cv::Mat src, double max_dimension);
 	void radarDetection(cv::Mat src);
-	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, cv::Rect GT);
+	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, Eigen::Vector3d GT);
 
-	std::vector<std::vector<int>> readGroundTruth(std::string fileName);
+	std::vector<Eigen::Vector3d> readGroundTruth(std::string fileName);
 	std::string getFileString(std::string fileName);
 	std::vector<Eigen::Vector4d> loadBeagleData(std::string beagleFile);
 	std::vector<Eigen::Vector4d> loadTargetData(std::string targetFile);

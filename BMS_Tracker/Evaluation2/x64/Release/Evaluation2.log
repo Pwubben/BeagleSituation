@@ -1,8 +1,8 @@
-﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: The intermediate directory (x64\Release\) contains files shared from another project (Evaluation2.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Main.cpp
+﻿C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\IDE\VC\VCTargets\Microsoft.CppBuild.targets(387,5): warning MSB8028: The intermediate directory (x64\Release\) contains files shared from another project (Evall.vcxproj, Evaluation.vcxproj, Evaluation2.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  DataAss.cpp
   Generating code
-  365 of 8994 functions ( 4.1%) were compiled, the rest were copied from previous compilation.
+  346 of 9065 functions ( 3.8%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    119 functions had inline decision re-evaluated but remain unchanged
+    65 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  Evaluation2.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\BMS_Tracker\x64\Release\Evaluation.exe
+  Evaluation2.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\BMS_Tracker\x64\Release\Eval.exe

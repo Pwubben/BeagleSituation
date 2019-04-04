@@ -22,7 +22,7 @@ Kalman::Kalman(const Eigen::Vector2d& navDet, const double& v, const double& hea
 	init = true;
 }
 
-void Kalman::compute(Eigen::VectorXd detection, double radVel_, double angle_, Eigen::Vector3d beagleMeas )
+void Kalman::compute(Eigen::VectorXd detection, double radVel_, double omega, double angle_, Eigen::Vector3d beagleMeas )
 {
 	//Target processing
 	//Track prediction

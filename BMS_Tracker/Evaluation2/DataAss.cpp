@@ -8,7 +8,6 @@ using namespace std;
 using namespace cv;
 
 GnuGraph graph;
-
 void DataAss::run(const detection& info) {
 
 	//Update Beagle state
@@ -90,10 +89,10 @@ void DataAss::run(const detection& info) {
 
 	drawCount++;
 	//////Draw results
-	//if (drawCount > 200) {
-	//	drawResults();
-	//	drawCount = 0;
-	//}
+	/*if (drawCount > 200) {
+		drawResults();
+		drawCount = 0;
+	}*/
 }
 
 void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<prediction> predictionVector, std::vector<bool>& unassignedDetection, std::vector<double> lastDetection, std::vector<int> matchFlag) {
@@ -114,7 +113,7 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 			if (!detect.relRange.empty() && trackMatch[i] != -1) {
 				matchFlag[i] = 0;
 				tracks_[i].detectionAbsence = 0;
-				tracks_[i].setDetection(detect.relRange[trackMatch[i]], detect.relAngle[trackMatch[i]], detect.relVel[trackMatch[i]], _beaglePrediction, matchFlag[i]);
+				tracks_[i].setDetection(detect.relRange[trackMatch[i]], detect.relAngle[trackMatch[i]], detect.relVel[trackMatch[i]], _targetMeas(3), _beaglePrediction, matchFlag[i]);
 				unassignedDetection[trackMatch[i]] = false;
 			}
 
@@ -128,14 +127,14 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 					tracks_[i].detectionAbsence++;
 
 					//Range prediction is returned as detection
-					tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[camMatch[i]], -100, _beaglePrediction, matchFlag[i]);
+					tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[camMatch[i]], -100, _targetMeas(3), _beaglePrediction, matchFlag[i], info.boundRectx[camMatch[i]]);
 			}
 
 			//Return prediction as measurement if no match is found
 			if (matchFlag[i] == -1) {
 				matchFlag[i] = 2;
 				tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
-				tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _beaglePrediction, matchFlag[i]);
+				tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _targetMeas(3), _beaglePrediction, matchFlag[i]);
 
 			}
 

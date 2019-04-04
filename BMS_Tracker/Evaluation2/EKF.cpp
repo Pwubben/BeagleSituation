@@ -31,12 +31,13 @@ EKF::EKF(double max_acceleration, double max_turn_rate, double max_yaw_accel, do
 		0.0, 0.0, 0.0, pow(sVelocity, 2), 0.0,
 		0.0, 0.0, 0.0, 0.0, pow(sYaw, 2);
 
+	//std::cout << "Q:\n"<< Q << std::endl;
 	R = Eigen::MatrixXd(4, 4); //4 sources of measurement for Beagle
 	R << pow(varGPS, 2), 0.0, 0.0, 0.0,
 		0.0, pow(varGPS, 2), 0.0, 0.0,
 		0.0, 0.0, pow(varYaw, 2), 0.0,
 		0.0, 0.0, 0.0, pow(varYawRate, 2);
-
+	//std::cout << "R:\n" << R << std::endl;
 	//Jacobian Beagle
 	JH = Eigen::MatrixXd(4, 5);
 	JH << 1.0, 0.0, 0.0, 0.0, 0.0,
@@ -49,6 +50,7 @@ EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, 
 	Q(Q_),
 	P(P_),
 	dt(1 / double(15)),
+	init(true),
 	modelNum(modelNumber)
 {
 	I = Eigen::MatrixXd::Identity(n, n);
@@ -64,9 +66,10 @@ EKF::EKF(const Eigen::Vector2d& navDet, const double& v, const double& heading, 
 		  0.0, 1.0, 0.0, 0.0, 0.0;
 }
 
-void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_, Eigen::Vector3d beagleMeas) {
+void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_, double omega, Eigen::Vector3d beagleMeas) {
 	if (init) {
 		init = false;
+		lambda = 1;
 	}
 	else {
 		
@@ -89,9 +92,9 @@ void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_, Eigen::Vecto
 				}
 				else {
 					Z_.resize(2);
-					Z_ << z;
+					Z_ << z;// , omega;
 				}
-				update(Z_, angle_,beagleMeas);
+				update(Z_, angle_, omega , beagleMeas);
 				updateJA(dt);
 				predict();
 			}
@@ -105,10 +108,14 @@ void EKF::compute(Eigen::VectorXd z, double radVel_, double angle_, Eigen::Vecto
 
 void EKF::predict() {
 	// Prediction step
+
+	//std::cout << Q << std::endl;
 	P = JA * P * JA.transpose() + Q;
+	/*if (BeagleObject)
+		std::cout << "JA:\n"<< JA << std::endl;*/
 }
 
-void EKF::update(const Eigen::VectorXd& z, double angle_, Eigen::Vector3d beagleMeas) {
+void EKF::update(const Eigen::VectorXd& z, double angle_, double omega, Eigen::Vector3d beagleMeas) {
 
 	if (init) {
 		if (BeagleObject) {
@@ -117,24 +124,27 @@ void EKF::update(const Eigen::VectorXd& z, double angle_, Eigen::Vector3d beagle
 			x(1) = z(1);
 			x(2) = z(2);
 			x(4) = z(3);
+			std::cout << x.transpose() << std::endl;
 		}
 		
 	}
 	else {
 		if (!BeagleObject) {
-			if (R.cols() == 2) {
+			if (matchFlag == 1) {
 				JH.resize(2, 5);
 				JH << 1.0, 0.0, 0.0, 0.0, 0.0,
 					0.0, 1.0, 0.0, 0.0, 0.0;
+					//0.0, 0.0, 0.0, 0.0, 1.0;
 				Hx.resize(2);
 				Hx = JH*x;
+				//std::cout << "z: " << z.transpose() << std::endl; 
 			}
-			else {
+			else if (matchFlag == 0) {
 				JH.resize(3, 5);
 				JH << 1.0, 0.0, 0.0, 0.0, 0.0,
 					  0.0, 1.0, 0.0, 0.0, 0.0,
 					  0.0, 0.0, x(3)*sin(M_PI + angle_ - x(2)), cos(M_PI + angle_ - x(2)), 0.0;
-				
+				//std::cout << "angle, x(2) x(3) :" << angle_ << ", " << x(2) << ", " << x(3) << std::endl;
 				Hx.resize(3);
 				Hx << x(0), x(1), x(3)*cos(M_PI + angle_ - x(2));
 			}
@@ -171,22 +181,23 @@ void EKF::update(const Eigen::VectorXd& z, double angle_, Eigen::Vector3d beagle
 
 		//IMM probability
 		if (!BeagleObject)
-			lambda = modelProbability(P, R, z);
+			modelProbability(P, R, z);
 
-		if (!BeagleObject) {
+		if (BeagleObject) {
 			//std::cout << "zm: \n" << z.transpose() << std::endl;
-			//std::cout << "R: \n" << R << std::endl;
-			//std::cout << "P:\n" << P << std::endl;
-			//std::cout << "S1:\n" << S << std::endl;
-			//std::cout << "K: \n" << K << std::endl;
+			/*std::cout << "R: \n" << R << std::endl;
+			std::cout << "P:\n" << P << std::endl;
+			std::cout << "S1:\n" << S << std::endl;
+			std::cout << "K: \n" << K << std::endl;*/
 			//std::cout << "x state update: \n" << x << std::endl;
-			//std::cout << "JH1: \n" << JH << std::endl;
-			//std::cout << "Hx: \n" << Hx << std::endl;
+			/*std::cout << "JH1: \n" << JH << std::endl;
+			std::cout << "Hx: \n" << Hx << std::endl;*/
 		}
 		// Update estimate
 		x = x + K * (Z);
 
 		if (BeagleObject) {
+			//std::cout << "x_beagle\n " << x.transpose() << std::endl;
 			x_predictVec.push_back(x(0));
 			y_predictVec.push_back(x(1));
 			x_measVec.push_back(z(0));
@@ -201,7 +212,7 @@ void EKF::update(const Eigen::VectorXd& z, double angle_, Eigen::Vector3d beagle
 		//std::cout << "R:\n" << R << std::endl;
 
 		if (!BeagleObject ) {
-			//std::cout << "x:\n" << x << std::endl;
+			//std::cout << "x_target:\n" << x << std::endl;
 			//std::cout << "Z:\n" << Z << std::endl;
 			//std::cout << "K:\n" << K << std::endl;
 			//std::cout << "R:\n" << R << std::endl;
@@ -247,8 +258,8 @@ void EKF::updateJA(double dt) {
 		int n = x.size();
 		JA = Eigen::MatrixXd(n, n);
 		if (fabs(x(4)) < 0.01) {
-			JA << 1.0, 0.0, x(3)*dt*cos(x(2)), dt*sin(x(2)), 0,
-				0.0, 1.0, -x(3)*dt*sin(x(2)), dt*cos(x(2)), 0,
+			JA << 1.0, 0.0, x(3)*dt*cos(x(2)), dt*sin(x(2)), 0.0,
+				0.0, 1.0, -x(3)*dt*sin(x(2)), dt*cos(x(2)), 0.0,
 				0.0, 0.0, 1.0, 0.0, dt,
 				0.0, 0.0, 0.0, 1.0, 0.0,
 				0.0, 0.0, 0.0, 0.0, 1.0;
@@ -260,7 +271,7 @@ void EKF::updateJA(double dt) {
 				0.0, 0.0, 0.0, 1.0, 0.0,
 				0.0, 0.0, 0.0, 0.0, 1.0;
 		}
-
+		//std::cout << "JA:: \n" << JA << std::endl;
 	}
 	if (modelNum == 6) {
 		x(0) = x(0) + (x(3) * dt) * sin(x(2));
@@ -308,7 +319,7 @@ void EKF::updateJA(double dt) {
 	}
 }
 
-double EKF::modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::VectorXd& z) {
+void EKF::modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::VectorXd& z) {
 	Eigen::MatrixXd JHProb(2, 5);
 	JHProb << 1.0, 0.0, 0.0, 0.0, 0.0,
 		0.0, 1.0, 0.0, 0.0, 0.0;
@@ -316,15 +327,18 @@ double EKF::modelProbability(Eigen::MatrixXd P, Eigen::MatrixXd R, const Eigen::
 	Eigen::MatrixXd JHT = P * JH.transpose();
 	Eigen::MatrixXd S = JH * JHT + R;
 	//if (matchFlag == 0) {
-	//	//std::cout << "S:\n" << S << std::endl;
+	//std::cout << "S:\n" << S << std::endl;
 	//	std::cout << "P:\n" << P << std::endl;
 	//}
-	double lambda = 1.0 / (2.0 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z-Hx).transpose()*S.inverse()*(z - Hx));
+	lambda = 1.0 / (2.0 * M_PI * sqrt(S.determinant())) * std::exp(-0.5*(z-Hx).transpose()*S.inverse()*(z - Hx));
 
-	if (lambda < 1e-80)
-		lambda = 1e-80;
+	lambda *= 100000;
+	//std::cout << "Hx:\n" << Hx << std::endl;
+	//std::cout << "z:\n" << z << std::endl;
+	//std::cout << "l: " << lambda << std::endl;
+	if (lambda < 1e-60)
+		lambda = 1e-60;
 
-	return lambda;
 }
 
 Eigen::Vector2d EKF::getPrediction() {

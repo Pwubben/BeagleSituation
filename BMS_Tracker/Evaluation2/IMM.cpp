@@ -15,8 +15,6 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 	x_mixed = Eigen::MatrixXd(numStates, modelNum);
 	mu_tilde = Eigen::MatrixXd(modelNum, modelNum);
 
-
-
 	stateTransitionProb = Eigen::MatrixXd(modelNum, modelNum);
 
 	//Model probability update
@@ -29,7 +27,7 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 	x = Eigen::VectorXd(numStates);
 	P = Eigen::MatrixXd(numStates,numStates);
 	
-
+	std::cout << Q_[1] << std::endl;
 	//filters.emplace_back(std::shared_ptr<KalmanFilters>(new Kalman(navDet, vInit, headingInit, Q_[1], P_[1], 1)));
 	for (auto &&No : modelNumbers) {
 		if (No < 5) 
@@ -39,7 +37,7 @@ IMM::IMM(const int& modelNum, const std::vector<int>& modelNumbers, const std::v
 	}
 }
 
-void IMM::run(Eigen::VectorXd z, double radVel, double angle_, Eigen::VectorXd beagleMeas)
+void IMM::run(Eigen::VectorXd z, double radVel, double angle_, double omega, Eigen::VectorXd beagleMeas)
 {
 	if (init)
 		init = false;
@@ -58,17 +56,17 @@ void IMM::run(Eigen::VectorXd z, double radVel, double angle_, Eigen::VectorXd b
 	for (int i = 0; i < filters.size(); i++) {
 		filters[i]->setMatchFlag(matchFlag);
 		filters[i]->setR(Rvec[i]);
-		filters[i]->compute(z, radVel, angle_, beagleMeas);
+		filters[i]->compute(z, radVel, angle_, omega, beagleMeas);
 		
 		//Retrieve information from filters
 		lambda(i) = filters[i]->getProbability();
 		x_model.col(i) = filters[i]->getState();
 		P_model[i] = filters[i]->getCovariance();
-
+		//std::cout << "P: " << i << "\n" << P_model[i] << std::endl;
 		P_mixed[i] = P_mixed[i].setZero();
-		
+		//std::cout << lambda << std::endl;
 	}
-	if (matchFlag == 0)
+	//if (matchFlag == 0)
 		//std::cout <<"lambda:\n "<<lambda << std::endl;
 	if (matchFlag < 2) 
 		modelProbabilityUpdate();
@@ -99,6 +97,7 @@ void IMM::stateInteraction()
 	for (int j = 0; j < filters.size(); j++) {
 		for (int i = 0; i < filters.size(); i++) {
 			P_mixed[j] += mu_tilde(i, j) * (P_model[i] + (x_model.col(i) - x_mixed.col(j))*(x_model.col(i) - x_mixed.col(j)).transpose());
+			//std::cout << "P: " << j << "\n " << P_mixed[j] << std::endl;
 		}
 	}
 }
@@ -110,8 +109,8 @@ void IMM::modelProbabilityUpdate()
 	
 	//Model probability
 	mu_hat = 1.0 / c * lambda;
-	if (matchFlag == 0)
-		std::cout << "mu_hat:\n" << mu_hat << std::endl;
+	/*if (matchFlag == 0)
+		std::cout << "mu_hat:\n" << mu_hat << std::endl;*/
 }
 
 void IMM::stateEstimateCombination()
@@ -122,6 +121,7 @@ void IMM::stateEstimateCombination()
 		//std::cout << "x_model: \n" << x_model << std::endl;
 		//std::cout << "x_end: \n" << x << std::endl;
 		//std::cout << "mu_hat: " << mu_hat.transpose() << std::endl;
+		//std::cout << "Lambda: " << lambda.transpose() << std::endl;
 	}
 	else {
 		if (fabs(x(4)) < 0.01) {
@@ -154,7 +154,7 @@ Eigen::VectorXd IMM::getState() {
 }
 
 Eigen::VectorXd IMM::getMu() {
-	return mu_hat;
+	return lambda;
 }
 
 void IMM::setStateTransitionProbability(Eigen::MatrixXd stateTransitionProb_) {

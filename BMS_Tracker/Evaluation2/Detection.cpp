@@ -10,12 +10,12 @@ using namespace std;
 
 void Detection::run(std::string path, std::string File, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets) {
 	path_ = path;
-	
+
 	cout << File << endl;
 	//Load ground truth data
-	Rect GT;
-	/*std::vector<std::vector<int>> GroundTruth = readGroundTruth(getFileString(groundTruthFile));
-
+	
+	std::vector<Eigen::Vector3d> GroundTruth = readGroundTruth(getFileString("SR_SS1_GT.csv"));
+	/*
 	for (int s = 0; s < GroundTruth.size(); s++) {
 		Rect coord(GroundTruth[s][0], GroundTruth[s][1], GroundTruth[s][2], GroundTruth[s][3]);
 		GT.push_back(coord);
@@ -30,7 +30,7 @@ void Detection::run(std::string path, std::string File, std::string beagleFile, 
 	//Performance parameters
 	double max_dimension = evalSettings.maxDimension;
 	double sample_step = 25;
-	FOV = Util::deg2Rad(88.4);
+	FOV = Util::deg2Rad(88.4);// ::deg2Rad(88.4);
 
 	bool check(false);
 	try {
@@ -45,12 +45,12 @@ void Detection::run(std::string path, std::string File, std::string beagleFile, 
 
 			while (1) {
 				double duration = static_cast<double>(cv::getTickCount());
-				/*if (count == 0) {
-					for (int i = 0; i < 1500; i++) {
-						capture >> src;
-						count++;
-					}
-				}*/
+				//if (count == 0) {
+				//	for (int i = 0; i < 9; i++) {
+				//		capture >> src;
+				//		//count++;
+				//	}
+				//}
 				/*if (count == 1800)
 					cv::waitKey(0);*/
 
@@ -74,19 +74,19 @@ void Detection::run(std::string path, std::string File, std::string beagleFile, 
 
 				//Camera detector
 				if(evalSettings.cameraUtil)
-					saliencyDetection(src, max_dimension, sample_step, threshold, GT);
+					saliencyDetection(src, max_dimension, sample_step, threshold, GroundTruth[0]);
 		
 				data_ass_->setBeagleData(beagleData_[count]);
 				data_ass_->setTargetData(targetData_[count]);
 
 				data_ass_->run(info);
 				count++;
-				//std::cout << count << std::endl;
+				std::cout << count << std::endl;
 				duration = static_cast<double>(cv::getTickCount()) - duration;
 				duration /= cv::getTickFrequency();
-				std::cout << duration << std::endl;
+				//std::cout << duration << std::endl;
 
-				/*if (count == stopFrame)
+				/*if (count == 400)
 					break;*/
 			}
 		}
@@ -125,7 +125,7 @@ void Detection::windowDetect(cv::Mat src, double max_dimension) {
 	//circle(src, radarCenter, radarRadius, cv::Scalar(0, 0, 255), 3, 8, 0);
 
 	radarWindow = cv::Rect(radarCenter.x - radarRadius, max(0,radarCenter.y - radarRadius), 2 * radarRadius, 2 * radarRadius);
-	seaWindow = cv::Rect(10,src.rows - 532, src.cols - 10, 532);
+	seaWindow = cv::Rect(10,src.rows - 532, src.cols-10, 532);
 	//cv::imshow("Hough", src);
 	//cv::waitKey(0);
 	radarCenter.x -= radarWindow.x;
@@ -195,7 +195,7 @@ void Detection::radarDetection(Mat src) {
 	//return location;
 }
 
-void Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, Rect GT)
+void Detection::saliencyDetection(Mat src, double max_dimension, double sample_step, double threshold, Eigen::Vector3d GT)
 {
 	//cv::VideoWriter video("TurnSaliency_CovTrh.avi", CV_FOURCC('M', 'J', 'P', 'G'), 15, src.size(), true)
 
@@ -269,6 +269,7 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 			angle += 2.0* M_PI;*/
 		info.cameraAngle.push_back(angle);
 		info.cameraElevation.push_back(boundRect[i].y + boundRect[i].height/2);
+		info.boundRectx.push_back(double(boundRect[i].x) + 0.5*double(boundRect[i].width) - 0.5*double(src.cols));
 
 	}
 	duration = static_cast<double>(cv::getTickCount()) - duration;
@@ -285,14 +286,17 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 	{
 		rectangle(drawWindow, boundRect[i].tl(), boundRect[i].br(), color);
 	}
-
+	int pixel = tan(GT(1)) / (2.0 * tan(FOV / 2) / src.cols) + 0.5 * src.cols;
+	
+	cv::Point GTPoint = { pixel,80 };
+	//circle(drawWindow, GTPoint, 1, cv::Scalar(0, 0, 255), 3, 8, 0);
 	//color = Scalar(0, 0, 200);
 	/*cv::Point2i point(GT.x + 40, GT.y -383);
 	cout << point.x << " - " << point.y + GT.height/2 << endl;
 	rectangle(drawWindow, GT.tl()+cv::Point2i(40, - 383), GT.br() + cv::Point2i(40, -383), color);*/
 
-	//imshow("Src", drawWindow);
-	//waitKey(1);
+	/*imshow("Src", drawWindow);
+	waitKey(1);*/
 	//waitKey(1);
 	//Compute angle
 	
@@ -303,22 +307,25 @@ void Detection::saliencyDetection(Mat src, double max_dimension, double sample_s
 	
 }
 
-vector<vector<int>> Detection::readGroundTruth(std::string fileName){
+vector<Eigen::Vector3d> Detection::readGroundTruth(std::string fileName){
 
-	vector<vector<int>> groundTruth;
+	vector<Eigen::Vector3d> groundTruth;
 	ifstream file(fileName);
 	string line;
 	while (getline(file, line))
 	{
-		vector<int> row;
+		Eigen::Vector3d row;
+		int i = 0;
 		stringstream iss(line);
 		string val;
 
 		// while getline gives correct result
 		while (getline(iss, val, ','))
 		{
-			row.push_back(stoi(val));
+			row(i) = stof(val);
+			i++;
 		}
+
 		groundTruth.push_back(row);
 	}
 

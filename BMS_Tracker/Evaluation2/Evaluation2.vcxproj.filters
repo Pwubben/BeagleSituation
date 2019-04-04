@@ -27,15 +27,6 @@
     <ClInclude Include="Tracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GnuGraph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GnuGraphFormatter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GnuGraphPiping.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
