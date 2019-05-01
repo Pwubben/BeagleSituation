@@ -53,6 +53,7 @@ void IMM::run(Eigen::VectorXd z, double radVel, double angle_, double omega, Eig
 		}
 	}
 
+#pragma omp parallel for 
 	for (int i = 0; i < filters.size(); i++) {
 		filters[i]->setMatchFlag(matchFlag);
 		filters[i]->setR(Rvec[i]);
@@ -68,7 +69,7 @@ void IMM::run(Eigen::VectorXd z, double radVel, double angle_, double omega, Eig
 	}
 	//if (matchFlag == 0)
 		//std::cout <<"lambda:\n "<<lambda << std::endl;
-	if (matchFlag < 2) 
+	if (matchFlag == 0) 
 		modelProbabilityUpdate();
 
 	P.setZero();
@@ -92,7 +93,7 @@ void IMM::stateInteraction()
 	//std::cout << "mu_tilde: \n" << mu_tilde << std::endl;
 	//std::cout << "x_model: \n" << x_model << std::endl;
 	x_mixed = x_model * mu_tilde;
-	//std::cout << "x_mixed: \n" << x_mixed << std::endl;
+	//std::cout << "x_mixed: \n" << x_mixed.transpose() << std::endl;
 
 	for (int j = 0; j < filters.size(); j++) {
 		for (int i = 0; i < filters.size(); i++) {
@@ -119,24 +120,41 @@ void IMM::stateEstimateCombination()
 	if (matchFlag < 2) {
 		x = x_model * mu_hat;
 		//std::cout << "x_model: \n" << x_model << std::endl;
-		//std::cout << "x_end: \n" << x << std::endl;
+		//std::cout << "x_end: \n" << x.transpose() << std::endl;
 		//std::cout << "mu_hat: " << mu_hat.transpose() << std::endl;
 		//std::cout << "Lambda: " << lambda.transpose() << std::endl;
 	}
 	else {
-		if (fabs(x(4)) < 0.01) {
+		//if (fabs(x(4)) < 0.01) {
+		//	x(0) = x(0) + (x(3) * dt) * sin(x(2));
+		//	x(1) = x(1) + (x(3) * dt) * cos(x(2));
+		//	x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
+		//	x(3) = x(3);
+		//	x(4) = Util::sgn(x(4))*std::max(double(abs(x(4))), double(0.0001));
+		//}
+		//else {
+		//	x(0) = x(0) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
+		//	x(1) = x(1) + (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2)));
+		//	x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
+		//	x(3) = x(3);
+		//	x(4) = x(4);
+		//}
+		double L = 25;
+		double V = 56;
+		double D = 0.0222 / sqrt(9.81*pow(V, 1.0 / 3.0))*pow(L / pow(V, 1.0 / 3.0), 2.85);
+		if (fabs(x(4)) < 0.005) {
 			x(0) = x(0) + (x(3) * dt) * sin(x(2));
 			x(1) = x(1) + (x(3) * dt) * cos(x(2));
 			x(2) = std::fmod((x(2) + M_PI), (2.0 * M_PI)) - M_PI;
-			x(3) = x(3);
+			x(3) = abs(x(3));
 			x(4) = Util::sgn(x(4))*std::max(double(abs(x(4))), double(0.0001));
 		}
 		else {
-			x(0) = x(0) + (x(3) / x(4)) * (-cos(x(4) * dt + x(2)) + cos(x(2)));
-			x(1) = x(1) + (x(3) / x(4)) * (sin(x(4) * dt + x(2)) - sin(x(2)));
-			x(2) = std::fmod((x(2) + x(4) * dt + M_PI), (2.0 * M_PI)) - M_PI;
-			x(3) = x(3);
-			x(4) = x(4);
+			x(0) = x(0) + (L*(1.7 + D*x(3)))*(30.0 / double(2.0*x(4))) * (-cos(x(3)*dt / ((L*(1.7 + D*x(3)))*(30 / double(2.0*x(4)))) + x(2)) + cos(x(2)));
+			x(1) = x(1) + (L*(1.7 + D*x(3)))*(30.0 / double(2.0*x(4))) * (sin(x(3) / ((L*(1.7 + D*x(3)))*(30 / double(2.0*x(4)))) * dt + x(2)) - sin(x(2)));
+			x(2) = std::fmod((x(2) + x(3) / ((L*(1.7 + D*x(3)))*(30 / double(2.0*x(4)))) * dt + M_PI), (2.0 * M_PI)) - M_PI;
+			x(3) = abs(x(3));
+			x(4) = Util::sgn(x(4))*std::min(double(abs(x(4))), double(60));
 		}
 	}
 	for (int i = 0; i < filters.size(); i++) {
@@ -154,7 +172,7 @@ Eigen::VectorXd IMM::getState() {
 }
 
 Eigen::VectorXd IMM::getMu() {
-	return lambda;
+	return mu_hat;
 }
 
 void IMM::setStateTransitionProbability(Eigen::MatrixXd stateTransitionProb_) {

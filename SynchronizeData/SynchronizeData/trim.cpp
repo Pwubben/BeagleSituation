@@ -62,8 +62,8 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 
 	int startFrame = FPS*begin+correction;
 	
-	int endFrame = end- startFrame;
-	endFrame = end;
+	int endFrame = end - unPauseFrame;
+	//endFrame = end;
 	//endFrame = 2540;
 	//endFrame = round(endFrame);
 	// Cycle trough frames until video is unpaused
@@ -78,12 +78,12 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 	std:: cout << "Start frame reached, starting write" << std::endl;
 
 	for (int i = 0; i < endFrame; i++) {
-		if (count == 0) {
-			for (int j = 0; j < 2540; j++) {
+		/*if (count == 0) {
+			for (int j = 0; j < 1550; j++) {
 				src >> tSrc;
 				count++;
 			}
-		}
+		}*/
 
 		src >> tSrc;
 
@@ -94,9 +94,9 @@ void trim(cv::VideoCapture src, double begin, double end,int unPauseFrame, std::
 		}
 		video.write(tSrc);
 		count++;
-		cv::imshow("frame", tSrc);
+		/*cv::imshow("frame", tSrc);
 		std::cout << count << std::endl;
-		cv::waitKey(0);
+		cv::waitKey(0);*/
 		if (count == endFrame / 4) {
 			std::cout << "25% done" << std::endl;
 		}
@@ -173,36 +173,36 @@ double IMUData(std::string s, std::string d) {
 
 	//float staticLat = float(-latvec[0]);
 
-	int unPause = 0;
-	while (latvec[unPause] == latvec[0])
-	{
-		unPause++;
-	}
+	//int unPause = 0;
+	//while (latvec[unPause] == latvec[0])
+	//{
+	//	unPause++;
+	//}
 
-	int pause = latvec.size()-1;
-	while (latvec[pause] == latvec[latvec.size()-1]) {
-		pause--;
-	}
-	
-	//unPause += 22;
+	//int pause = latvec.size()-1;
+	//while (latvec[pause] == latvec[latvec.size()-1]) {
+	//	pause--;
+	//}
+	//
+	////unPause += 22;
 
-	std::vector<double>::const_iterator first = ROTvec.begin() + unPause;
-	std::vector<double>::const_iterator last = ROTvec.end() - (ROTvec.size() - pause);
-	std::vector<double> ROTvec_ret1(first, last);
-	first = HDTvec.begin() + unPause;
-	last = HDTvec.end()- ( HDTvec.size() - pause);
-	std::vector<double> HDTvec_ret1(first, last);
-	first = latvec.begin() + unPause;
-	last = latvec.end() -( latvec.size() - pause);
-	std::vector<double> latvec_ret1(first, last);
-	first = lonvec.begin() + unPause;
-	last = lonvec.end()- ( lonvec.size() - pause);
-	std::vector<double> lonvec_ret1(first, last);
+	//std::vector<double>::const_iterator first = ROTvec.begin() + unPause;
+	//std::vector<double>::const_iterator last = ROTvec.end() - (ROTvec.size() - pause);
+	//std::vector<double> ROTvec_ret1(first, last);
+	//first = HDTvec.begin() + unPause;
+	//last = HDTvec.end()- ( HDTvec.size() - pause);
+	//std::vector<double> HDTvec_ret1(first, last);
+	//first = latvec.begin() + unPause;
+	//last = latvec.end() -( latvec.size() - pause);
+	//std::vector<double> latvec_ret1(first, last);
+	//first = lonvec.begin() + unPause;
+	//last = lonvec.end()- ( lonvec.size() - pause);
+	//std::vector<double> lonvec_ret1(first, last);
 	
 	std::ofstream myfile(d, std::ofstream::out | std::ofstream::trunc);
 
-	for (int i = 0; i < ROTvec_ret1.size(); i++) {
-		myfile << latvec_ret1[i] << "," << lonvec_ret1[i] << "," << HDTvec_ret1[i] << "," << ROTvec_ret1[i] << std::endl;
+	for (int i = 0; i < ROTvec.size(); i++) {
+		myfile << latvec[i] << "," << lonvec[i] << "," << HDTvec[i] << "," << ROTvec[i] << std::endl;
 	}
 	myfile.close();
 	double vidSize = lonvec.size();

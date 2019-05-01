@@ -1,2 +1,9 @@
-﻿  SynchronizeData.cpp
+﻿  trim.cpp
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(23): warning C4101: 'eq': unreferenced local variable
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(63): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(65): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(66): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+c:\users\pimwu\documents\github\beaglesituation\synchronizedata\synchronizedata\trim.cpp(208): warning C4244: 'initializing': conversion from 'unsigned __int64' to 'double', possible loss of data
+  SynchronizeData.cpp
+  Generating Code...
   SynchronizeData.vcxproj -> C:\Users\pimwu\Documents\GitHub\BeagleSituation\SynchronizeData\x64\Debug\SynchronizeData.exe

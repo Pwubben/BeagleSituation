@@ -18,6 +18,7 @@ struct detection {
 	std::vector<double> cameraAngle;
 	std::vector<double> cameraElevation;
 	std::vector<double> boundRectx;
+	int   radarDropout;
 };
 
 struct evaluationSettings {
@@ -79,6 +80,13 @@ public:
 
 	static int sgn(double val) {
 		return (0.0 < val) - (val < 0.0);
+	}
+
+	static double constrainAngle(double x) {
+		x = fmod(x + M_PI, 2.0*M_PI);
+		if (x < 0)
+			x += 2.0*M_PI;
+		return x - M_PI;
 	}
 
 	static double round(double var)
@@ -342,7 +350,7 @@ public:
 	struct prediction getPrediction(); // based on protected values
 	double getDetection();
 	double getAngle();
-	void setDetection(const double& range, const double& angle, const double& velocity, const double& omega, Eigen::Vector4d beagleMeas, int matchFlag, double x= 0.0);
+	void setDetection(const double& range, const double& angle, const double& velocity, const double& omega, Eigen::Vector4d beagleMeas, int matchFlag, int dropOut , double x = 0.0);
 
 	void body2nav(const double& range, const double& angle, Eigen::Vector4d& beagleMeas);
 	void nav2body(Eigen::Vector3d _beaglePrediction);
@@ -351,8 +359,10 @@ public:
 
 	std::vector<std::vector<double>> getPlotVectors();
 	std::vector<std::vector<Eigen::VectorXd>> getResultVectors();
+	double getDuration();
 protected:
 	double count = 0;
+	double duration = 0;
 	evaluationSettings evalSettings;
 	std::unique_ptr<Kalman> KF;
 	std::unique_ptr<EKF> EKF_;
@@ -414,8 +424,8 @@ public:
 		//Kalman filter Beagle
 		Eigen::VectorXd xInit(5);
 		xInit << 0.0, 0.0, 0.0, 5.0, 0.0; // Initiate velocity as it is not measured
-		EKFParams params = { 0.1, 20.0, 0.1, 0.05, 0.05, 0.05 };
-
+		EKFParams params = { 0.01, 20.0, 0.1, 0.05, 0.05, 0.05 };
+		
 		//Initiate EKF for Beagle
 		BeagleTrack = std::make_unique<EKF>(params.maxAcc, params.maxTurnRate, params.maxYawAcc, params.varGPS, params.varYaw, params.varYawRate, xInit);
 		beagleInit = true;
@@ -445,7 +455,7 @@ public:
 	std::pair<std::vector<double>, std::vector<double>> distanceDet(std::vector<double> cdet, std::vector<double> hdet, double rdet);
 	std::vector<int> DataAss::distanceDet(const detection& info, std::vector<prediction> rdet);
 	void drawResults();
-
+	double getDuration();
 protected:
 	int drawCount = 0;
 	int radarCount = 0;
@@ -487,12 +497,14 @@ public:
 	};
 	~Detection() {}
 
-	void run(std::string path, std::string File, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets);
+	void run(std::string path, std::string File, std::string beagleFile, std::string radarFile, std::string targetFile, std::string beagleDes, std::string targetDes, std::string resultDes, int targets, double fov = 90);
 	void windowDetect(cv::Mat src, double max_dimension);
 	void radarDetection(cv::Mat src);
-	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, Eigen::Vector3d GT);
+	void saliencyDetection(cv::Mat src, double max_dimension, double sample_step, double threshold, Eigen::VectorXd GT);
 
-	std::vector<Eigen::Vector3d> readGroundTruth(std::string fileName);
+	int closest(std::vector<double> const & vec, double value);
+
+	std::vector<Eigen::VectorXd> readGroundTruth(std::string fileName);
 	std::string getFileString(std::string fileName);
 	std::vector<Eigen::Vector4d> loadBeagleData(std::string beagleFile);
 	std::vector<Eigen::Vector4d> loadTargetData(std::string targetFile);
@@ -501,7 +513,9 @@ public:
 	void writeDataFile(std::vector<std::vector<Eigen::VectorXd>> stateVectors, std::string BeagleFile, std::string TargetFile);
 	void writeResultFile(std::vector<std::vector<std::vector<Eigen::VectorXd>>> stateVectors, std::string resultFile);
 
+
 protected:
+	std::vector<Eigen::Vector3d> angleVector;
 	bool centerInit = false;
 	std::unique_ptr<DataAss> data_ass_;
 	void getInput();

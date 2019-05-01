@@ -39,14 +39,25 @@ void DataAss::run(const detection& info) {
 
 		if (result.first) 
 			newRangeDetection[result.second] = false;
-		if (resultAngle.first)
+		if (resultAngle.first )
 			newAngleDetection[resultAngle.second] = false;
+
+		/*if (info.radarDropout == 0) {
+			for (auto&& det : newRangeDetection) {
+				det = false;
+			}
+			for (auto&& det : newAngleDetection) {
+				det = false;
+			}
+		}*/
+		
 	}
 
 	//Match radar and camera detections in case of new radar detection
 	for (int i = 0; i < newRangeDetection.size(); i++) {
 		if (newRangeDetection[i] || newAngleDetection[i]) {
-
+			/*if (info.radarDropout == 0)
+				std::cout << "Dropout" << std::endl;*/
 			detect.relRange.push_back(info.radarRange[i]);
 			detect.relAngle.push_back(info.radarAngle[i]);
 			detect.relVel.push_back(info.radarVel[i]);
@@ -62,12 +73,12 @@ void DataAss::run(const detection& info) {
 	GlobalNearestNeighbor(info, predictionVector, unassignedDetection, lastDetection, matchFlag);
 
 	//For ground truth velocity
-	/*TargetTrack->update(_targetMeas);
+	TargetTrack->update(_targetMeas);
 
 	BeagleState.push_back(BeagleTrack->getState());
 	TargetState.push_back(TargetTrack->getState());
 
-	TargetTrack->compute(_targetMeas);*/
+	TargetTrack->compute(_targetMeas);
 
 	//TODO Beagle KF - Obtain Beagle updates 
 	BeagleTrack->compute(_beagleMeas);
@@ -89,7 +100,7 @@ void DataAss::run(const detection& info) {
 
 	drawCount++;
 	//////Draw results
-	/*if (drawCount > 200) {
+	/*if (drawCount > 100) {
 		drawResults();
 		drawCount = 0;
 	}*/
@@ -113,7 +124,8 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 			if (!detect.relRange.empty() && trackMatch[i] != -1) {
 				matchFlag[i] = 0;
 				tracks_[i].detectionAbsence = 0;
-				tracks_[i].setDetection(detect.relRange[trackMatch[i]], detect.relAngle[trackMatch[i]], detect.relVel[trackMatch[i]], _targetMeas(3), _beaglePrediction, matchFlag[i]);
+				std::cout << info.radarDropout << std::endl;
+				tracks_[i].setDetection(detect.relRange[trackMatch[i]], detect.relAngle[trackMatch[i]], detect.relVel[trackMatch[i]], _targetMeas(3), _beaglePrediction, matchFlag[i], info.radarDropout);
 				unassignedDetection[trackMatch[i]] = false;
 			}
 
@@ -127,14 +139,14 @@ void DataAss::GlobalNearestNeighbor(const detection& info, std::vector<predictio
 					tracks_[i].detectionAbsence++;
 
 					//Range prediction is returned as detection
-					tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[camMatch[i]], -100, _targetMeas(3), _beaglePrediction, matchFlag[i], info.boundRectx[camMatch[i]]);
+					tracks_[i].setDetection(predictionVector[i].range, info.cameraAngle[camMatch[i]], -100, _targetMeas(3), _beaglePrediction, matchFlag[i], info.radarDropout, info.boundRectx[camMatch[i]]);
 			}
 
 			//Return prediction as measurement if no match is found
 			if (matchFlag[i] == -1) {
 				matchFlag[i] = 2;
 				tracks_[i].detectionAbsence++;//TODO detectionAbsence - link dt 
-				tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _targetMeas(3), _beaglePrediction, matchFlag[i]);
+				tracks_[i].setDetection(predictionVector[i].range, predictionVector[i].angle, -100, _targetMeas(3), _beaglePrediction, matchFlag[i],info.radarDropout);
 
 			}
 
@@ -454,6 +466,10 @@ std::vector<std::vector<std::vector<Eigen::VectorXd>>> DataAss::getResultVectors
 	return stateVectors;
 }
 
+double DataAss::getDuration() {
+	double avgDuration = tracks_[0].getDuration();
+	return avgDuration;
+}
 //void DataAss::NearestNeighbor(detection info){
 //	for (int i = 0; i < tracks_.size(); i++) {
 //		angleMatchThres = Util::deg2Rad(8 - 6 / double(800)*lastDetection[i]);
